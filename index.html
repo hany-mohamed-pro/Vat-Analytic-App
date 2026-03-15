@@ -3,42 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ذكاء البيانات المالية - نسخة المطاعم والحلويات</title>
+    <title>ذكاء البيانات المالية - النظام الشامل للمطاعم</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- React & ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
     
     <!-- Babel -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js" crossorigin="anonymous"></script>
     
-    <!-- SheetJS (For Excel Export & Import) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
 
-    <!-- html2pdf (For PDF Export) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
-        body { font-family: 'Tajawal', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; overflow: hidden; }
+        @media print { .page-break { page-break-before: always; } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, Fragment } = React;
+        const { useState, useEffect, Fragment, useMemo } = React;
 
-        // --- ICONS (SVG Components) ---
+        // --- ICONS ---
         const Icon = ({ children, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {children}
             </svg>
         );
-        const Upload = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Icon>;
+        const UploadIcon = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Icon>;
         const FileSpreadsheet = (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></Icon>;
         const CheckCircle = (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
         const BarChart3 = (p) => <Icon {...p}><path d="M3 3v18h18"/><rect width="4" height="7" x="7" y="10" rx="1"/><rect width="4" height="12" x="15" y="5" rx="1"/></Icon>;
@@ -53,11 +58,16 @@
         const Layers = (p) => <Icon {...p}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></Icon>;
         const ChevronDown = (p) => <Icon {...p}><polyline points="6 9 12 15 18 9"/></Icon>;
         const ChevronUp = (p) => <Icon {...p}><polyline points="18 15 12 9 6 15"/></Icon>;
-        const AlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
         const Tag = (p) => <Icon {...p}><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></Icon>;
         const Edit2 = (p) => <Icon {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></Icon>;
+        const PieChart = (p) => <Icon {...p}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></Icon>;
+        const CalendarIcon = (p) => <Icon {...p}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
+        const ShoppingCart = (p) => <Icon {...p}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></Icon>;
+        const Wallet = (p) => <Icon {...p}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></Icon>;
+        const FolderOpen = (p) => <Icon {...p}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></Icon>;
+        const AlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
 
-        // --- UTILITY & MATH FUNCTIONS ---
+        // --- UTILITY FUNCTIONS ---
         const levenshtein = (a, b) => {
           const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
           for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
@@ -73,8 +83,8 @@
 
         const isSimilarName = (a, b) => {
           if (!a || !b) return false;
-          const cleanA = String(a).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز|معرض)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
-          const cleanB = String(b).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز|معرض)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
+          const cleanA = String(a).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز|معرض|عميل|زبون)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
+          const cleanB = String(b).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز|معرض|عميل|زبون)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
           if (cleanA === cleanB) return true;
           if (Math.abs(cleanA.length - cleanB.length) > 3) return false; 
           const distance = levenshtein(cleanA, cleanB);
@@ -92,192 +102,231 @@
           return isNaN(parsed) ? 0 : parsed;
         };
 
+        // Date Parser with Standardized YYYY-MM-DD output
         const parseDate = (val) => {
-          if (!val) return null;
-          if (typeof val === 'number') {
-            const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-            return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
-          }
-          const d = new Date(val);
-          return isNaN(d.getTime()) ? String(val).trim() : d.toISOString().split('T')[0]; 
+            if (val === null || val === undefined || val === '') return null;
+            const pad = (n) => String(n).padStart(2, '0');
+            
+            // 1. Handle JavaScript Date object
+            if (val instanceof Date) {
+                if (isNaN(val.getTime())) return null;
+                return `${val.getFullYear()}-${pad(val.getMonth()+1)}-${pad(val.getDate())}`;
+            }
+            
+            // 2. Handle Excel Serial Date (numbers)
+            if (typeof val === 'number') {
+                const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+                return isNaN(d.getTime()) ? null : `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+            }
+            
+            let str = String(val).trim();
+            str = str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)); // Fix Arabic numerals
+            
+            // Extract the date part aggressively (stop at space or T to remove time like 14:30:00)
+            str = str.split(/[ T]/)[0];
+            
+            // Match YYYY-MM-DD or YYYY/MM/DD
+            let match = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+            if (match) return `${match[1]}-${pad(match[2])}-${pad(match[3])}`;
+            
+            // Match DD-MM-YYYY or DD/MM/YYYY or MM/DD/YYYY
+            match = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/);
+            if (match) {
+                let p1 = parseInt(match[1], 10);
+                let p2 = parseInt(match[2], 10);
+                let year = match[3];
+                // if p2 > 12, it must be the day. MM/DD/YYYY
+                if (p2 > 12) return `${year}-${pad(p1)}-${pad(p2)}`;
+                // if p1 > 12, it must be the day. DD/MM/YYYY
+                if (p1 > 12) return `${year}-${pad(p2)}-${pad(p1)}`;
+                // default to DD/MM/YYYY (Standard in SA)
+                return `${year}-${pad(p2)}-${pad(p1)}`;
+            }
+
+            // Match DD-MM-YY or DD/MM/YY
+            match = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2})$/);
+            if (match) {
+                let p1 = parseInt(match[1], 10);
+                let p2 = parseInt(match[2], 10);
+                let year = 2000 + parseInt(match[3], 10);
+                if (p2 > 12) return `${year}-${pad(p1)}-${pad(p2)}`;
+                if (p1 > 12) return `${year}-${pad(p2)}-${pad(p1)}`;
+                return `${year}-${pad(p2)}-${pad(p1)}`;
+            }
+
+            // Fallback native
+            let d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; 
+            }
+            return null; // Force null so it becomes 'غير محدد'
         };
 
         const formatCurrency = (val) => {
-          return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR' }).format(val);
+          return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 2 }).format(val);
         };
 
-        // --- EXPERT ACCOUNTING TAXONOMY ENGINE (SOCPA / IFRS for F&B) ---
-        const getCategory = (supplierName, descriptionText = "") => {
-          const nameText = String(supplierName).toLowerCase();
-          const descText = String(descriptionText).toLowerCase();
+        const isDateInRange = (dateStr, startStr, endStr, filterMonth) => {
+            if (!startStr && !endStr && !filterMonth) return true;
+            if (!dateStr || dateStr === 'غير محدد') return false; 
+            
+            if (filterMonth) {
+                return dateStr.startsWith(filterMonth);
+            } 
+            
+            if (startStr && dateStr < startStr) return false;
+            if (endStr && dateStr > endStr) return false;
+            
+            return true;
+        };
+
+        // --- 🟢 EXPERT EXPENSES TAXONOMY ENGINE ---
+        const getExpenseCategory = (name, desc) => {
+          const nameText = String(name).toLowerCase();
+          const descText = String(desc).toLowerCase();
           const allText = nameText + " " + descText;
-          
           let scores = {};
-          const addScore = (cat, points) => { scores[cat] = (scores[cat] || 0) + points; };
+          const addScore = (cat, basePoints, isDescMatch = false) => { scores[cat] = (scores[cat] || 0) + basePoints + (isDescMatch ? 200 : 0); };
+          const check = (regex, cat, basePoints = 100) => {
+              if (regex.test(descText)) addScore(cat, basePoints, true);
+              else if (regex.test(nameText)) addScore(cat, basePoints, false);
+          };
 
-          if (/(لابتوب|حاسب|كمبيوتر|ماك بوك|أجهزة حاسب|سيرفر|ثلاجة عرض|فرن كبير|معدات رأسمالية|laptop|macbook)/.test(allText) && !/(صيانة|تصليح|قطع غيار)/.test(allText)) {
-              addScore('أصول ثابتة - أجهزة حاسب آلي ومعدات', 100);
-          }
-
-          if (/(صيانة|تصليح|اصلاح|إصلاح|قطع غيار)/.test(allText)) {
-              if (/(سيار|مركب|دينا|شاحن|اطار|إطار|كفر)/.test(allText)) addScore('صيانة سيارات ومعدات نقل', 100);
-              else if (/(مبن|سباك|كهربائي|باب|جدار|أرضي|دهان|ترميم)/.test(allText)) addScore('صيانة وتشغيل مباني ومرافق', 100);
-              else if (/(ايفون|جوال|ايباد|شاشة|حاسب|لابتوب|سوفتوير)/.test(allText)) addScore('صيانة أجهزة إلكترونية وتقنية', 100);
-              else addScore('صيانة آلات ومعدات التشغيل', 90); 
-          }
-
-          if (/(ش[كو]+لات|كاكاو|رائب|بيض|دواجن|لحم|دجاج|سمك|فاكه|فواك|برتقال|كرز|ليمون|يانسون|ألبان|البان|قهوة|بن |يمني|مشروب|غازي|مياه|ماء|ثلج|زبدة|قشط|كريم|خفق|حليب|أجبان|جبن|سكر|طحين|دقيق|مكسرات|فستق|لوز|فانيليا|خميرة|عصير|عسل|مربى|تمور|بهار|خضار|خضروات|تموين|غذائي|ألوان|الوان|بودرة)/.test(allText)) {
-              addScore('تكلفة مبيعات - مواد غذائية (خامات ومكونات)', 100);
-          }
-
-          if (/(رول|كيك سميك|قاعد|قواعد|أكياس|كيس|شفاف|قالب|قوالب|شريط|ستان|مصاص|تغليف|علب|كرتون|بوكس|ورق زبدة|قصدير|تيك اوي)/.test(allText) && !/(نظافة|نفاية)/.test(allText)) {
-              addScore('تكلفة مبيعات - مواد تعبئة وتغليف ومستلزمات تقديم', 100);
-          }
-
-          if (/(شمع|شموع|زينة|ديكور|مجسم|توبر|شجرة|ecualyptus|اكولبتبيس|زهور|ورد|لافندر)/.test(allText)) {
-              addScore('مستلزمات حفلات وزينة وديكور', 90);
-          }
-
-          if (/(صيني|صواني|أدوات.*مطبخ|أدوات.*طعام|أدوات.*كيك|صحون|ملاعق|شوك|سكاكين|قدور|طناجر|أكواب زجاج|عجان|ثلاجة)/.test(allText) && !/(صيانة|تصليح)/.test(allText)) {
-              addScore('أدوات ومهمات طعام ومطبخ (تشغيلية)', 85);
-          }
-
-          if (/(إزالة.*مواد|ترسب|جلاية|معقم|مسح|ممسح|ارضيات|نظافة|تنظيف|قفاز|صابون|ديتول|مبيض|منظف|مكنس|مكانيس|أكياس نفاية|كلوركس|صوف القطن|قطن)/.test(allText)) {
-              addScore('مواد وأدوات تنظيف متنوعة', 100);
-          }
-
-          if (/(octane|اوكتان|بنزين|ديزل|وقود|محطة|محروقات|غاز|اسطوانة|تعبئة)/.test(allText)) {
-              addScore('مواد بترولية، محروقات وغاز', 100);
-          }
-
-          if (/(إستشارات|استشارات|خدمات شهرية|أتعاب|محاماة|مراجعة|تدقيق|محاسب)/.test(allText) && !/(تقني|برنامج)/.test(allText)) {
-              addScore('إستشارات وأتعاب مهنية', 110);
+          check(/(لابتوب|حاسب|كمبيوتر|ماك بوك|أجهزة حاسب|سيرفر|ثلاجة عرض|فرن كبير|معدات رأسمالية|laptop|macbook)/, 'أصول ثابتة - أجهزة حاسب آلي ومعدات', 100);
+          check(/(ايفون|جوال|ايباد|شاشة|حاسب|لابتوب|سوفتوير|اكس ماكس|برو ماكس|بطارية جوال|بطارية ايفون|خلفية ايفون|شاشة ايفون)/, 'صيانة أجهزة إلكترونية وتقنية', 100);
+          check(/(سيار|مركب|دينا|شاحن|اطار|إطار|كفر|بطارية سيارة)/, 'صيانة سيارات ومعدات نقل', 100);
+          check(/(مبن|سباك|كهربائي|باب|جدار|أرضي|دهان|ترميم)/, 'صيانة وتشغيل مباني ومرافق', 100);
+          
+          if (/(وصلة غاز|لي غاز|منظم غاز|محبس غاز|اسطوانة غاز للمطبخ|تمديد غاز|موقد)/.test(allText)) {
+              addScore('صيانة وتشغيل مباني ومرافق', 150, true);
+              addScore('أدوات ومهمات طعام ومطبخ (تشغيلية)', 120, true);
           }
           
-          if (/(منصة النمو|fidas|فيداس)/.test(allText)) {
-              if (/(استشار|خدمات شهرية)/.test(descText)) addScore('إستشارات وأتعاب مهنية', 120);
-              if (/(اشتراك|تجديد|منصة|برنامج)/.test(descText)) addScore('اشتراكات تقنية وبرمجيات (IT & SaaS)', 120);
-          }
-
-          if (/(اشتراك شهري|كانفا|canva|سحابة|برنامج|تطبيق|نظام|سوفتوير|كلاود|استضافة|دومين|سيرفر|saas|odoo|erp|اشتراك تقني|تجديد اشتراك)/.test(allText) && !/(تأمين|انترنت|اتصالات|استشارات)/.test(allText)) {
-              addScore('اشتراكات تقنية وبرمجيات (IT & SaaS)', 90);
-          }
-
-          if (/(ايجار|إيجار|عقار|سكن|محل)/.test(allText) && !/(سيارة|مركبة|دينا|نقل)/.test(allText)) {
-              addScore('مصروفات إيجارات وعقارات', 100);
-          }
-
-          if (/(تأمين طبي|بوبا|التعاونية|تأمين صحي|ميدغلف|تكافل)/.test(allText)) {
-              addScore('مصروفات تأمين طبي للموظفين', 100);
-          }
-          if (/(دواء|صيدلية|مستشفى|علاج|مستلزمات طبية)/.test(allText) && !/(تأمين)/.test(allText)) {
-              addScore('مصروفات رعاية طبية وأدوية', 100);
-          }
-
-          if (/(تأمينات اجتماعية|gosi)/.test(allText)) {
-              addScore('مصروفات التأمينات الاجتماعية (GOSI)', 120);
-          }
-
-          if (/(شركة الكهرباء|فاتورة كهرباء|السعودية للكهرباء|كهرباء)/.test(allText) && !/(سباك|صيانة)/.test(allText)) {
-              addScore('مصروفات كهرباء', 110); 
-          }
-          if (/(مياه وطنية|شركة المياه|فاتورة مياه)/.test(allText) && !/(شرب|نوفا|صفا)/.test(allText)) {
-              addScore('مصروفات مياه', 110);
-          }
-          if (/(اتصالات|stc|موبايلي|زين|انترنت|فاتورة جوال)/.test(allText)) {
-              addScore('مصروفات اتصالات وانترنت', 110);
-          }
-
-          if (/(حملات|اعلانية|إعلانية|تسويق|سناب|انستقرام|تيك توك|جوجل ادز|ترويج|اعلانات|دعاية|لوحات)/.test(allText)) {
-              addScore('تسويق وحملات إعلانية', 100);
-          }
-
-          if (/(ملابس|قبعات تخرج|طاقية|خياط|يونيفورم|مريلة|تفصيل زي|زي موظفين|زي عمال)/.test(allText)) {
-              addScore('زي عاملين ومهمات عمل', 100);
-          }
-
-          if (/(تجديد كارت|رخصة|نقاط مدد|مدد|قوى|مقيم|جوازات|تأشيرة|رسوم حكومية|غرفة تجارية|سجل تجاري|بلدية|زكاة|ضريبة)/.test(allText) && !/(تأمينات اجتماعية|gosi|قيمة مضافة|vat)/.test(allText)) {
-              addScore('رسوم ومدفوعات حكومية', 100);
-          }
-
-          if (/(مطبوعات|ورق|أقلام|اقلام|حبر|قرطاسية|مكتبية|أدوات مكتبية|أختام|دفاتر)/.test(allText)) {
-              addScore('أدوات ومهمات مكتبية (قرطاسية ومطبوعات)', 100);
-          }
-
-          if (/(صدقة|صدقات|تبرع|جمعية|أوقاف|أيتام|إغاثة|إحسان)/.test(allText)) {
-              addScore('تبرعات ومساهمات مجتمعية', 100);
-          }
-
-          if (/(تدريب|دورة|معهد|ورشة عمل|تطوير موظفين|training)/.test(allText)) {
-              addScore('تدريب وتطوير كوادر', 100);
-          }
-          if (/(أبحاث|بحث وتطوير|r&d|research & development|development)/.test(allText) && !/(عقار|مباني)/.test(allText)) {
-              addScore('مصروفات وأبحاث وتطوير (R&D)', 100);
-          }
-
-          if (/(بنك|مصرف|رسوم تحويل|عمولة|مدى|فيزا|ماستركارد)/.test(allText)) {
-              addScore('رسوم بنكية وخدمات مالية', 100);
-          }
-          if (/(شحن|توصيل|لوجستي|ارامكس|سمسا|جاهز|هنقرستيشن|مرسول|دينا|ونش|سطحة)/.test(allText) || (/(تأجير|ايجار)/.test(allText) && /(دينا|شاحنة|سيارة)/.test(allText))) {
-              addScore('نقل وخدمات لوجستية وتوصيل', 100);
-          }
-
-          if (/(بطارية)/.test(allText) && !/(جوال|سيارة|مركبة)/.test(allText)) {
-              addScore('أدوات ومهمات استهلاكية متنوعة', 50);
-          }
-
-          let bestCategory = 'تجارة وتوريدات متنوعة عامة';
-          let max = 0;
-          for (const [cat, score] of Object.entries(scores)) {
-              if (score > max) {
-                  max = score;
-                  bestCategory = cat;
+          if (/(صيانة|تصليح|اصلاح|إصلاح|قطع غيار)/.test(allText)) {
+              if (!scores['صيانة سيارات ومعدات نقل'] && !scores['صيانة وتشغيل مباني ومرافق'] && !scores['صيانة أجهزة إلكترونية وتقنية']) {
+                  addScore('صيانة آلات ومعدات التشغيل', 90, /(صيانة|تصليح|اصلاح|إصلاح|قطع غيار)/.test(descText));
               }
           }
-
-          if (max === 0 && /(تجارة|توريد|شركة|مؤسسة)/.test(nameText)) {
-              return 'تجارة وتوريدات متنوعة عامة';
-          } else if (max === 0) {
-              return 'مصروفات تشغيلية متنوعة';
+          check(/(خل|فرشلي|فرشلى|زيت طعام|مواد طبخ|ش[كو]+لات|كاكاو|رائب|بيض|دواجن|لحم|دجاج|سمك|فاكه|فواك|برتقال|كرز|ليمون|يانسون|ألبان|البان|قهوة|بن |يمني|مشروب|غازي|مياه|ماء|ثلج|زبدة|قشط|كريم|خفق|حليب|أجبان|جبن|سكر|طحين|دقيق|مكسرات|فستق|لوز|فانيليا|خميرة|عصير|عسل|مربى|تمور|بهار|خضار|خضروات|تموين|غذائي|ألوان|الوان|بودرة)/, 'تكلفة مبيعات - مواد غذائية (خامات ومكونات)', 100);
+          check(/(رول|كيك سميك|قاعد|قواعد|أكياس|كيس|شفاف|قالب|قوالب|شريط|ستان|مصاص|تغليف|علب|كرتون|بوكس|ورق زبدة|قصدير|تيك اوي)/, 'تكلفة مبيعات - مواد تعبئة وتغليف ومستلزمات تقديم', 100);
+          check(/(شمع|شموع|زينة|ديكور|مجسم|توبر|شجرة|ecualyptus|اكولبتبيس|زهور|ورد|لافندر)/, 'مستلزمات حفلات وزينة وديكور', 90);
+          check(/(صيني|صواني|أدوات.*مطبخ|مواد للمطبخ|أدوات.*طعام|أدوات.*كيك|صحون|ملاعق|شوك|سكاكين|قدور|طناجر|أكواب زجاج|عجان|ثلاجة)/, 'أدوات ومهمات طعام ومطبخ (تشغيلية)', 85);
+          check(/(إزالة.*مواد|ترسب|جلاية|معقم|مسح|ممسح|ارضيات|نظافة|تنظيف|قفاز|صابون|ديتول|مبيض|منظف|مكنس|مكانيس|أكياس نفاية|كلوركس|صوف القطن|قطن)/, 'مواد وأدوات تنظيف متنوعة', 100);
+          check(/(octane|اوكتان|بنزين|ديزل|وقود|محطة|محروقات|غاز|اسطوانة|تعبئة)/, 'مواد بترولية، محروقات وغاز', 100);
+          if (/(إستشارات|استشارات|خدمات شهرية|أتعاب|محاماة|مراجعة|تدقيق|محاسب)/.test(allText) && !/(تقني|برنامج)/.test(allText)) addScore('إستشارات وأتعاب مهنية', 110, /(إستشارات|استشارات|خدمات شهرية|أتعاب|محاماة|مراجعة|تدقيق|محاسب)/.test(descText));
+          if (/(منصة النمو|fidas|فيداس)/.test(allText)) {
+              if (/(استشار|خدمات شهرية)/.test(descText)) addScore('إستشارات وأتعاب مهنية', 120, true);
+              else if (/(اشتراك|تجديد|منصة|برنامج)/.test(descText)) addScore('اشتراكات تقنية وبرمجيات (IT & SaaS)', 120, true);
           }
+          if (/(اشتراك شهري|كانفا|canva|سحابة|برنامج|تطبيق|نظام|سوفتوير|كلاود|استضافة|دومين|سيرفر|saas|odoo|erp|اشتراك تقني|تجديد اشتراك)/.test(allText) && !/(تأمين|انترنت|اتصالات|استشارات)/.test(allText)) {
+              addScore('اشتراكات تقنية وبرمجيات (IT & SaaS)', 90, /(اشتراك شهري|كانفا|canva|سحابة|برنامج|تطبيق|نظام|سوفتوير|كلاود|استضافة|دومين|سيرفر|saas|odoo|erp|اشتراك تقني|تجديد اشتراك)/.test(descText));
+          }
+          if (/(ايجار|إيجار|عقار|سكن|محل|مستودع)/.test(allText) && !/(سيارة|مركبة|دينا|نقل)/.test(allText)) addScore('مصروفات إيجارات وعقارات', 100, /(ايجار|إيجار|عقار|سكن|محل|مستودع)/.test(descText));
+          check(/(تأمين طبي|بوبا|التعاونية|تأمين صحي|ميدغلف|تكافل)/, 'مصروفات تأمين طبي للموظفين', 100);
+          check(/(دواء|صيدلية|مستشفى|علاج|مستلزمات طبية)/, 'مصروفات رعاية طبية وأدوية', 100);
+          check(/(تأمينات اجتماعية|gosi)/, 'مصروفات التأمينات الاجتماعية (GOSI)', 120);
+          if (/(شركة الكهرباء|فاتورة كهرباء|السعودية للكهرباء|كهرباء)/.test(allText) && !/(سباك|صيانة)/.test(allText)) addScore('مصروفات كهرباء', 110, /(فاتورة كهرباء|كهرباء)/.test(descText)); 
+          if (/(مياه وطنية|شركة المياه|فاتورة مياه)/.test(allText) && !/(شرب|نوفا|صفا|مياه معدنية|مياه شرب)/.test(allText)) addScore('مصروفات مياه', 110, /(فاتورة مياه|مياه وطنية)/.test(descText));
+          check(/(اتصالات|stc|موبايلي|زين|انترنت|فاتورة جوال|فاتورة هاتف)/, 'مصروفات اتصالات وانترنت', 110);
+          check(/(حملات|اعلانية|إعلانية|تسويق|سناب|انستقرام|تيك توك|جوجل ادز|ترويج|اعلانات|دعاية|لوحات)/, 'تسويق وحملات إعلانية', 100);
+          check(/(ملابس|قبعات تخرج|طاقية|خياط|يونيفورم|مريلة|تفصيل زي|زي موظفين|زي عمال)/, 'زي عاملين ومهمات عمل', 100);
+          if (/(تجديد كارت|رخصة|نقاط مدد|مدد|قوى|مقيم|جوازات|تأشيرة|رسوم حكومية|غرفة تجارية|سجل تجاري|بلدية|زكاة|ضريبة)/.test(allText) && !/(تأمينات اجتماعية|gosi|قيمة مضافة|vat)/.test(allText)) addScore('رسوم ومدفوعات حكومية', 100, /(تجديد كارت|رخصة|نقاط مدد|مدد|قوى|مقيم|جوازات|تأشيرة|رسوم حكومية|غرفة تجارية|سجل تجاري|بلدية|زكاة|ضريبة)/.test(descText));
+          check(/(مطبوعات|ورق|أقلام|اقلام|حبر|قرطاسية|مكتبية|أدوات مكتبية|أختام|دفاتر)/, 'أدوات ومهمات مكتبية (قرطاسية ومطبوعات)', 100);
+          check(/(صدقة|صدقات|تبرع|جمعية|أوقاف|أيتام|إغاثة|إحسان)/, 'تبرعات ومساهمات مجتمعية', 100);
+          check(/(تدريب|دورة|معهد|ورشة عمل|تطوير موظفين|training)/, 'تدريب وتطوير كوادر', 100);
+          if (/(أبحاث|بحث وتطوير|r&d|research & development|development)/.test(allText) && !/(عقار|مباني)/.test(allText)) addScore('مصروفات وأبحاث وتطوير (R&D)', 100, /(أبحاث|بحث وتطوير|r&d|research & development|development)/.test(descText));
+          check(/(بنك|مصرف|رسوم تحويل|عمولة|مدى|فيزا|ماستركارد)/, 'رسوم بنكية وخدمات مالية', 100);
+          if (/(شحن|توصيل|لوجستي|ارامكس|سمسا|جاهز|هنقرستيشن|مرسول|دينا|ونش|سطحة)/.test(allText) || (/(تأجير|ايجار)/.test(allText) && /(دينا|شاحنة|سيارة)/.test(allText))) addScore('نقل وخدمات لوجستية وتوصيل', 100, /(شحن|توصيل|لوجستي|ارامكس|سمسا|جاهز|هنقرستيشن|مرسول|دينا|ونش|سطحة|تأجير دينا|ايجار دينا)/.test(descText));
+          if (/(بطارية)/.test(allText) && !/(جوال|سيارة|مركبة|ايفون)/.test(allText)) addScore('أدوات ومهمات استهلاكية متنوعة', 50, /(بطارية)/.test(descText));
 
+          let bestCategory = 'مصروفات تشغيلية متنوعة';
+          let max = 0;
+          for (const [cat, score] of Object.entries(scores)) {
+              if (score > max) { max = score; bestCategory = cat; }
+          }
           return bestCategory;
         };
 
-        // --- SMART HEURISTIC DATA PROFILING ---
-        const detectSchema = (keys, sampleData) => {
+        // --- 🔵 EXPERT REVENUES TAXONOMY ENGINE (SOCPA for F&B) ---
+        const getRevenueCategory = (name, desc, rawEnt) => {
+          const nameText = String(name).toLowerCase();
+          const descText = String(desc).toLowerCase();
+          const rawText = String(rawEnt).toLowerCase();
+          const allText = nameText + " " + descText + " " + rawText;
+          
+          let scores = {};
+          const addScore = (cat, basePoints, isDescMatch = false) => { scores[cat] = (scores[cat] || 0) + basePoints + (isDescMatch ? 150 : 0); };
+          const check = (regex, cat, basePoints = 100) => {
+              if (regex.test(allText)) addScore(cat, basePoints, regex.test(descText));
+          };
+
+          check(/(جاهز|هنقرستيشن|مرسول|تطبيقات توصيل|طلبات|توصيل|تطبيق|jahez|hungerstation|delivery|ذا شيفز|تويو|toyou|ninja|نينجا|كريم|careem)/, 'إيرادات تطبيقات التوصيل', 100);
+          check(/(حفل|زواج|مناسب|بوفيه خارجي|تجهيز|كيترينج|تقديمات|catering|event)/, 'إيرادات حفلات ومناسبات', 100);
+          check(/(جملة|شركات|b2b|توريد للغير|بيع جملة|مبيعات الجملة|wholesale)/, 'إيرادات مبيعات جملة (B2B)', 100);
+          check(/(كيك|حلويات|مخبوزات|شوكولات|معجنات|cake|sweets|bakery|تورتة)/, 'مبيعات حلويات ومخبوزات', 90);
+          check(/(مقهى|قهوة|مشروبات|عصائر|شاي|coffee|drinks)/, 'مبيعات مشروبات وقهوة', 90);
+          check(/(مطعم|وجبات|طعام|مأكولات|dine|food|صالة|سفري|محلي)/, 'مبيعات مطعم (داخلي/سفري)', 85);
+          check(/(عميل نقدي|نقدي|شبكة|فيزا|ماستركارد|مدى|كاش|cash|pos|نقطة بيع|أبل باي|apple pay)/, 'مبيعات نقدية ونقاط بيع (POS)', 80);
+          check(/(تاجير|تأجير|رسوم تأخير|غرامات|إيرادات أخرى|اخرى|other)/, 'إيرادات تشغيلية أخرى', 50);
+
+          let bestCategory = 'إيرادات مبيعات عامة';
+          let max = 0;
+          for (const [cat, score] of Object.entries(scores)) {
+              if (score > max) { max = score; bestCategory = cat; }
+          }
+          return bestCategory;
+        };
+
+        // --- SMART SCHEMA DETECTION ---
+        const detectSchema = (keys, sampleData, moduleType) => {
           const schema = {
-            Supplier_Name: null, Supplier_TaxID: null, Invoice_Number: null, Invoice_Date: null, 
+            Entity_Name: null, Entity_TaxID: null, Invoice_Number: null, Invoice_Date: null, 
             Net_Amount: null, Taxable_Amount: null, NonTaxable_Amount: null, 
             VAT_Amount: null, Total_Amount: null, Item_Description: null
           };
 
           const scores = {};
           keys.forEach(k => {
-            scores[k] = { supplier: 0, taxId: 0, invNum: 0, date: 0, total: 0, net: 0, vat: 0, taxable: 0, nonTaxable: 0, desc: 0 };
+            scores[k] = { entity: 0, taxId: 0, invNum: 0, date: 0, total: 0, net: 0, vat: 0, taxable: 0, nonTaxable: 0, desc: 0 };
           });
           
           keys.forEach(k => {
             const lower = String(k).toLowerCase().trim();
-            if (/(مورد|اسم|شركة|جهة|حساب|دائن|vendor|supplier|merchant)/i.test(lower) && !/(رقم|id|no)/i.test(lower)) scores[k].supplier += 50;
-            if (/(بيان|تفاصيل|وصف|صنف|مادة|نوع|description|item|البيان)/i.test(lower) && !/(مورد|اسم|جهة|حساب|رقم|تاريخ|مبلغ)/i.test(lower)) scores[k].desc += 50;
-            if (/(رقم.*ضريب|ضريب.*رقم|تسجيل.*ضريب|تعريفي|tax id|vat id|vat no|tin|vat number|vat reg)/i.test(lower)) scores[k].taxId += 50;
-            if (/(فاتورة|مستند|مرجع|قيد|invoice|inv|ref)/i.test(lower) && !/(تاريخ|date|اجمالي|قيمة|مبلغ)/i.test(lower)) scores[k].invNum += 50;
-            if (/(تاريخ|وقت|date|time)/i.test(lower)) scores[k].date += 50;
-            if (/(اجمالي|إجمالي|مجموع|دائن|total|gross)/i.test(lower) && !/(صافي|خاضع|بدون)/i.test(lower)) scores[k].total += 50;
-            if (/(بدون ضريبة|غير خاضع|معفى|صفرية|non-taxable|exempt)/i.test(lower)) scores[k].nonTaxable += 50;
-            if (/(خاضع|taxable)/i.test(lower) && !/(غير|بدون|non|exempt)/i.test(lower)) scores[k].taxable += 50;
-            if (/(ضريبة|tax|vat)/i.test(lower) && !/(رقم|نسبة|id|tax id|vat id|بدون|خاضع|غير|معفى)/i.test(lower)) scores[k].vat += 50;
-            if (/(صافي|net|sub|basic|مبلغ|قيمة|amount)/i.test(lower) && !/(اجمالي|إجمالي|مجموع|ضريبة|tax|vat|total|gross|خاضع|بدون|بيان)/i.test(lower)) scores[k].net += 30;
+            
+            // Entity
+            if (moduleType === 'expenses' && /(مورد|اسم|شركة|جهة|حساب|دائن|vendor|supplier|merchant)/i.test(lower) && !/(رقم|id|no)/i.test(lower)) scores[k].entity += 500;
+            if (moduleType === 'revenues' && /(عميل|زبون|مشتري|مدين|حساب|جهة|اسم|العميل|الزبون|customer|client|buyer|source|channel|منصة|قناة|فرع|branch)/i.test(lower) && !/(رقم|id|no)/i.test(lower)) scores[k].entity += 500;
+            
+            // Basic Info
+            if (/(بيان|تفاصيل|وصف|صنف|مادة|نوع|description|item|البيان|طلب|order)/i.test(lower) && !/(مورد|عميل|اسم|جهة|حساب|رقم|تاريخ|مبلغ)/i.test(lower)) scores[k].desc += 500;
+            if (/(رقم.*ضريب|ضريب.*رقم|تسجيل.*ضريب|تعريفي|tax id|vat id|vat no|tin|vat number|vat reg)/i.test(lower)) scores[k].taxId += 500;
+            if (/(فاتورة|مستند|مرجع|قيد|سند|invoice|inv|ref|receipt|إيصال|طلب|order)/i.test(lower) && !/(تاريخ|date|اجمالي|قيمة|مبلغ)/i.test(lower)) scores[k].invNum += 500;
+            if (/(تاريخ|وقت|date|time|التاريخ|التوقيت)/i.test(lower)) scores[k].date += 500;
+            
+            // --- 1. SUPER EXACT MATCHES FOR AMOUNTS (POS SYSTEMS) ---
+            if (/^(الضريبة|ضريبة|ضرائب|الضرائب|tax|taxes|vat|tva|قيمة الضريبة|مبلغ الضريبة|الضريبة المستحقة|ضريبة القيمة المضافة|الضريبه|ضريبه|vat amount|tax amount|نسبة الضريبة|ضريبة المبيعات)$/i.test(lower)) scores[k].vat += 5000;
+            if (/^(الاجمالي|الإجمالي|المجموع|total|gross|إجمالي المبيعات|اجمالي المبيعات|المبلغ الاجمالي|المبلغ الإجمالي|المجموع الاجمالي|المجموع الإجمالي|grand total|النهائي|المبلغ الكلي|المستحق|الاجمالي مع الضريبة|الإجمالي مع الضريبة|total amount|الإجمالي الكلي|اجمالي المبلغ|إجمالي المبلغ|اجمالي الدخل)$/i.test(lower)) scores[k].total += 5000;
+            if (/^(الصافي|صافي|net|subtotal|المبيعات|المبلغ|القيمة|الايرادات|الإيرادات|صافي المبيعات|المبيعات الصافية|قبل الضريبة|الاجمالي قبل الضريبة|الإجمالي قبل الضريبة|صافي المبلغ|net amount|المجموع الفرعي|اجمالي المبيعات قبل الضريبة|قيمة المبيعات)$/i.test(lower)) scores[k].net += 5000;
+            if (/^(الخاضع|خاضع|الأساس الضريبي|الاساس الضريبي|خاضع للضريبة|المبيعات الخاضعة|taxable|الخاضعة للضريبة|المبلغ الخاضع|الاساس|الأساس|قيمة خاضعة)$/i.test(lower)) scores[k].taxable += 5000;
+            if (/^(غير خاضع|معفى|المبيعات المعفاة|بدون ضريبة|صفرية|non-taxable|exempt|معفاة|غير خاضعة|المبلغ المعفى|غير خاضع للضريبة|مبيعات معفاة|مبيعات صفرية)$/i.test(lower)) scores[k].nonTaxable += 5000;
+
+            // --- 2. AGGRESSIVE FUZZY MATCHES FOR AMOUNTS ---
+            if (/(ضريب|ضرائب|tax|vat|مضاف|رسوم|tva)/i.test(lower) && !/(رقم|نسب|id|بدون|خاضع|غير|معفى|قبل|بعد|الرقم|تعريف|أساس|اساس|اجمالي|إجمالي|مجموع|total|صافي|net)/i.test(lower)) scores[k].vat += 1000;
+            if (/(اجمالي|إجمالي|مجموع|total|gross|النهائي|الكلي|grand total|المستحق)/i.test(lower) && !/(صافي|خاضع|بدون|قبل|ضريبة|ضرائب|tax|vat|نسبة)/i.test(lower)) scores[k].total += 1000;
+            if (/(صافي|net|sub|basic|مبيعات|إيراد|ايراد|subtotal|قبل الضريبة|المبلغ|الطلب|orders|قيمة)/i.test(lower) && !/(اجمالي|إجمالي|مجموع|ضريبة|ضرائب|tax|vat|total|gross|خاضع|بدون|بعد|النهائي|الكلي|نسبة)/i.test(lower)) scores[k].net += 800;
+            if (/(خاضع|taxable|أساس|اساس)/i.test(lower) && !/(غير|بدون|non|exempt|معفاة|ضريبة|ضرائب)/i.test(lower)) scores[k].taxable += 1000;
+            if (/(بدون|غير خاضع|معفى|صفرية|non-taxable|exempt|معفاة|غير خاضعة)/i.test(lower)) scores[k].nonTaxable += 1000;
           });
 
+          // Values inference
           sampleData.slice(0, 20).forEach(row => {
             keys.forEach(k => {
               const val = row[k];
               if (val === null || val === undefined || val === '') return;
               const strVal = String(val).replace(/\.0+$/, '').trim(); 
               if (/^\d{15}$/.test(strVal)) scores[k].taxId += 10;
-              if (/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|صيدلية|مركز)/.test(strVal)) scores[k].supplier += 10;
+              if (moduleType === 'expenses' && /^(شركة|مؤسسة|مجموعة|مكتب|مصنع|صيدلية|مركز)/.test(strVal)) scores[k].entity += 10;
+              if (moduleType === 'revenues' && /^(السيد|العميل|زبون|شركة|مؤسسة|عميل|جاهز|هنقرستيشن)/.test(strVal)) scores[k].entity += 10;
               if (val instanceof Date || /^\d{4}[\/\-]\d{2}[\/\-]\d{2}/.test(strVal) || /^\d{2}[\/\-]\d{2}[\/\-]\d{4}/.test(strVal)) scores[k].date += 10;
               if (/^[A-Z0-9\-\/]{3,12}$/i.test(strVal) && /[0-9]/.test(strVal) && !/^\d{15}$/.test(strVal)) scores[k].invNum += 2;
             });
@@ -287,18 +336,15 @@
             let bestKey = null;
             let maxScore = threshold;
             keys.forEach(k => {
-              if (scores[k][scoreKey] > maxScore) {
-                maxScore = scores[k][scoreKey];
-                bestKey = k;
-              }
+              if (scores[k][scoreKey] > maxScore) { maxScore = scores[k][scoreKey]; bestKey = k; }
             });
             if (bestKey) {
               schema[schemaKey] = bestKey;
-              scores[bestKey] = { supplier: 0, taxId: 0, invNum: 0, date: 0, total: 0, net: 0, vat: 0, taxable: 0, nonTaxable: 0, desc: 0 };
+              scores[bestKey] = { entity: 0, taxId: 0, invNum: 0, date: 0, total: 0, net: 0, vat: 0, taxable: 0, nonTaxable: 0, desc: 0 };
             }
           };
 
-          assignBest('Supplier_TaxID', 'taxId', 15); 
+          assignBest('Entity_TaxID', 'taxId', 15); 
           assignBest('VAT_Amount', 'vat', 20);
           assignBest('Taxable_Amount', 'taxable', 20);
           assignBest('NonTaxable_Amount', 'nonTaxable', 20);
@@ -306,25 +352,24 @@
           assignBest('Net_Amount', 'net', 20);
           assignBest('Invoice_Date', 'date', 15);
           assignBest('Item_Description', 'desc', 20); 
-          assignBest('Supplier_Name', 'supplier', 15); 
+          assignBest('Entity_Name', 'entity', 15); 
           assignBest('Invoice_Number', 'invNum', 20);
 
-          if (!schema.Supplier_Name && schema.Item_Description) {
-             schema.Supplier_Name = schema.Item_Description;
-          }
+          if (!schema.Net_Amount && schema.Total_Amount) schema.Net_Amount = schema.Total_Amount;
+          if (!schema.Total_Amount && schema.Net_Amount) schema.Total_Amount = schema.Net_Amount;
 
           return schema;
         };
 
-        const processFinancialData = (rawData) => {
+        const processFinancialData = (rawData, moduleType) => {
           if (!rawData || rawData.length === 0) return null;
 
           const headers = Object.keys(rawData[0] || {});
-          const schema = detectSchema(headers, rawData);
+          const schema = detectSchema(headers, rawData, moduleType);
 
           let cleanData = rawData.map((row, index) => {
-            const rawSup = schema.Supplier_Name ? row[schema.Supplier_Name] : null;
-            const rawTaxId = schema.Supplier_TaxID ? String(row[schema.Supplier_TaxID] || '').replace(/\.\d+$/, '').trim() : '';
+            const rawEnt = schema.Entity_Name ? row[schema.Entity_Name] : null;
+            const rawTaxId = schema.Entity_TaxID ? String(row[schema.Entity_TaxID] || '').replace(/\.\d+$/, '').trim() : '';
             const rawDesc = schema.Item_Description ? row[schema.Item_Description] : '';
             
             let total = schema.Total_Amount ? parseNumber(row[schema.Total_Amount]) : 0;
@@ -333,35 +378,80 @@
             let nonTaxable = schema.NonTaxable_Amount ? parseNumber(row[schema.NonTaxable_Amount]) : 0;
             let net = schema.Net_Amount ? parseNumber(row[schema.Net_Amount]) : 0;
 
+            // --- BULLETPROOF MATHEMATICAL RECONCILIATION ENGINE ---
+            
+            // 0. Force 15% VAT Extraction for Revenues if VAT is completely missing or 0
+            if (moduleType === 'revenues') {
+                // If Net and Total are identical, OR VAT is 0, we assume it's a Gross amount with 15% inclusive VAT
+                if ((net === total && total > 0) || (vat === 0 && total > 0)) {
+                    taxable = total / 1.15;
+                    vat = total - taxable;
+                    net = taxable;
+                    nonTaxable = 0;
+                }
+            } else {
+                // For expenses, just fix Net if it wrongly fell back to Total
+                if (net === total && total > 0 && vat > 0) {
+                    net = total - vat;
+                }
+            }
+
+            // 1. Calculate strictly missing fields if obvious
+            if (vat === 0 && total > net && net > 0) vat = total - net;
+            if (net === 0 && total > 0 && vat > 0) net = total - vat;
+            if (total === 0 && net > 0 && vat >= 0) total = net + vat;
+            if (net === 0 && taxable > 0) net = taxable + nonTaxable;
+
+            // 2. Distribute Net strictly into Taxable / NonTaxable
             if (taxable === 0 && nonTaxable === 0 && net > 0) {
-              if (vat === 0) {
-                 nonTaxable = net;
-              } else {
-                 let calculatedTaxable = vat / 0.15;
-                 if (Math.abs(net - calculatedTaxable) <= 1) { 
+              if (vat > 0) { 
+                 let expectedVatIfFullyTaxable = net * 0.15;
+                 // If VAT matches 15% of Net perfectly (allow small rounding error)
+                 if (Math.abs(vat - expectedVatIfFullyTaxable) <= 1.5) { 
                     taxable = net;
-                 } else if (calculatedTaxable < net) {
-                    taxable = parseFloat(calculatedTaxable.toFixed(2));
-                    nonTaxable = parseFloat((net - taxable).toFixed(2));
+                    nonTaxable = 0;
                  } else {
-                    taxable = net; 
+                    // It's a mixed invoice (partially taxable). Find the exact taxable base from the VAT.
+                    let calculatedTaxable = vat / 0.15;
+                    if (calculatedTaxable <= net) {
+                       taxable = calculatedTaxable;
+                       nonTaxable = net - taxable;
+                    } else {
+                       taxable = net; // Safety fallback
+                       nonTaxable = 0;
+                    }
                  }
+              } else {
+                  // No VAT -> Entirely Non-Taxable
+                  taxable = 0;
+                  nonTaxable = net;
               }
+            } else if (taxable > 0 || nonTaxable > 0) {
+                // If explicitly mapped by columns, trust the columns but ensure Net and VAT align perfectly
+                net = taxable + nonTaxable;
+                if (vat === 0 && taxable > 0) vat = taxable * 0.15;
             }
             
-            if (taxable > 0 || nonTaxable > 0) {
-              net = parseFloat((taxable + nonTaxable).toFixed(2));
-            }
-            if (total === 0 && net > 0) {
-              total = parseFloat((net + vat).toFixed(2));
+            // 3. Strict Rounding
+            taxable = parseFloat(taxable.toFixed(2));
+            nonTaxable = parseFloat(nonTaxable.toFixed(2));
+            vat = parseFloat(vat.toFixed(2));
+            net = parseFloat((taxable + nonTaxable).toFixed(2));
+            
+            // 4. Force Total to match the mathematical sum perfectly
+            let calculatedTotal = parseFloat((net + vat).toFixed(2));
+            if (total === 0 || Math.abs(total - calculatedTotal) <= 2) {
+                total = calculatedTotal;
+            } else {
+                total = parseFloat(total.toFixed(2));
             }
 
             return {
               _originalIndex: index + 2,
-              Raw_Supplier: rawSup ? String(rawSup).trim() : 'غير_مدرج',
-              Supplier_ID: null,
-              Supplier_Normalized_Name: null,
-              Supplier_TaxID: rawTaxId,
+              Raw_Entity: rawEnt ? String(rawEnt).trim() : (moduleType==='expenses'?'مورد غير مدرج':'عميل نقدي / غير مدرج'),
+              Entity_ID: null,
+              Entity_Normalized_Name: null,
+              Entity_TaxID: rawTaxId,
               Invoice_Number: (schema.Invoice_Number && row[schema.Invoice_Number]) ? String(row[schema.Invoice_Number]).trim() : 'بدون رقم',
               Invoice_Date: schema.Invoice_Date ? parseDate(row[schema.Invoice_Date]) : 'غير محدد',
               Item_Description: rawDesc ? String(rawDesc).trim() : '', 
@@ -378,90 +468,71 @@
 
           if (cleanData.length === 0) return null;
 
-          const uniqueSuppliers = [...new Set(cleanData.map(d => d.Raw_Supplier))];
-          const supplierMapping = {};
+          const uniqueEntities = [...new Set(cleanData.map(d => d.Raw_Entity))];
+          const entityMapping = {};
           let currentId = 1;
+          const prefix = moduleType === 'expenses' ? 'SUP' : 'CUS';
 
-          uniqueSuppliers.forEach(supplier => {
-            if (supplierMapping[supplier]) return; 
-            const similar = uniqueSuppliers.filter(s => !supplierMapping[s] && isSimilarName(supplier, s));
+          uniqueEntities.forEach(ent => {
+            if (entityMapping[ent]) return; 
+            const similar = uniqueEntities.filter(s => !entityMapping[s] && isSimilarName(ent, s));
             const canonicalName = similar.sort((a, b) => b.length - a.length)[0]; 
-            const supId = `SUP-${String(currentId).padStart(4, '0')}`;
-            
-            similar.forEach(s => {
-              supplierMapping[s] = { id: supId, name: canonicalName };
-            });
+            const entId = `${prefix}-${String(currentId).padStart(4, '0')}`;
+            similar.forEach(s => { entityMapping[s] = { id: entId, name: canonicalName }; });
             currentId++;
           });
 
           cleanData.forEach(row => {
-            const mapping = supplierMapping[row.Raw_Supplier];
-            row.Supplier_ID = mapping.id;
-            row.Supplier_Normalized_Name = mapping.name;
-            row.Category = getCategory(mapping.name, row.Item_Description);
+            const mapping = entityMapping[row.Raw_Entity];
+            row.Entity_ID = mapping.id;
+            row.Entity_Normalized_Name = mapping.name;
+            row.Category = moduleType === 'expenses' 
+              ? getExpenseCategory(mapping.name, row.Item_Description) 
+              : getRevenueCategory(mapping.name, row.Item_Description, row.Raw_Entity);
           });
 
           const invoiceRegistry = new Set();
           cleanData.forEach(row => {
-            const calculatedTotal = row.Taxable_Amount + row.NonTaxable_Amount + row.VAT_Amount;
-            if (Math.abs(calculatedTotal - row.Total_Amount) > 2) {
-              row.Anomalies.push("تنبيه: (الأساس + الضريبة) لا يتطابق مع الإجمالي");
-              row.Confidence_Score -= 20;
+            const expectedTotal = parseFloat((row.Taxable_Amount + row.NonTaxable_Amount + row.VAT_Amount).toFixed(2));
+            const actualTotal = parseFloat(row.Total_Amount.toFixed(2));
+            if (Math.abs(expectedTotal - actualTotal) > 1.00) {
+              row.Anomalies.push(`خطأ في الجمع: الصافي والضريبة (${expectedTotal}) لا يساوي الإجمالي (${actualTotal})`);
             }
-            
-            const invKey = `${row.Supplier_ID}-${row.Invoice_Number}`;
-            if (invoiceRegistry.has(invKey) && row.Invoice_Number !== 'بدون رقم') {
-              row.Anomalies.push("رقم مستند مكرر لنفس المورد");
-              row.Confidence_Score -= 30;
+            if (row.Invoice_Number && !/^(بدون|0|n\/a|-|_|none|null)$/i.test(row.Invoice_Number) && row.Invoice_Number !== 'بدون رقم') {
+                const invKey = `${row.Entity_ID}-${row.Invoice_Number}`;
+                if (invoiceRegistry.has(invKey)) {
+                  row.Anomalies.push(`فاتورة مكررة: رقم ${row.Invoice_Number} مسجل مسبقاً لنفس الجهة`);
+                }
+                invoiceRegistry.add(invKey);
             }
-            invoiceRegistry.add(invKey);
           });
 
-          const supplierProfiles = {};
+          const entityProfiles = {};
           cleanData.forEach(row => {
-            if (!supplierProfiles[row.Supplier_ID]) {
-              supplierProfiles[row.Supplier_ID] = {
-                id: row.Supplier_ID,
-                name: row.Supplier_Normalized_Name,
-                taxId: row.Supplier_TaxID, 
-                categoriesSet: new Set(), 
-                invoiceCount: 0,
-                totalNet: 0,
-                totalTaxableNet: 0,
-                totalNonTaxableNet: 0,
-                totalVAT: 0,
-                totalSpend: 0,
-                anomalies: 0
+            if (!entityProfiles[row.Entity_ID]) {
+              entityProfiles[row.Entity_ID] = {
+                id: row.Entity_ID, name: row.Entity_Normalized_Name, taxId: row.Entity_TaxID, categoriesSet: new Set(), invoiceCount: 0, totalNet: 0, totalTaxableNet: 0, totalNonTaxableNet: 0, totalVAT: 0, totalSpend: 0, anomalies: 0
               };
             }
-            
-            if (!supplierProfiles[row.Supplier_ID].taxId && row.Supplier_TaxID) {
-               supplierProfiles[row.Supplier_ID].taxId = row.Supplier_TaxID;
-            }
-            
-            supplierProfiles[row.Supplier_ID].categoriesSet.add(row.Category);
-
-            supplierProfiles[row.Supplier_ID].invoiceCount += 1;
-            supplierProfiles[row.Supplier_ID].totalNet += row.Net_Amount;
-            supplierProfiles[row.Supplier_ID].totalTaxableNet += row.Taxable_Amount;
-            supplierProfiles[row.Supplier_ID].totalNonTaxableNet += row.NonTaxable_Amount;
-            supplierProfiles[row.Supplier_ID].totalVAT += row.VAT_Amount;
-            supplierProfiles[row.Supplier_ID].totalSpend += row.Total_Amount;
-            if (row.Anomalies.length > 0) supplierProfiles[row.Supplier_ID].anomalies += 1;
+            if (!entityProfiles[row.Entity_ID].taxId && row.Entity_TaxID) entityProfiles[row.Entity_ID].taxId = row.Entity_TaxID;
+            entityProfiles[row.Entity_ID].categoriesSet.add(row.Category);
+            entityProfiles[row.Entity_ID].invoiceCount += 1;
+            entityProfiles[row.Entity_ID].totalNet += row.Net_Amount;
+            entityProfiles[row.Entity_ID].totalTaxableNet += row.Taxable_Amount;
+            entityProfiles[row.Entity_ID].totalNonTaxableNet += row.NonTaxable_Amount;
+            entityProfiles[row.Entity_ID].totalVAT += row.VAT_Amount;
+            entityProfiles[row.Entity_ID].totalSpend += row.Total_Amount;
+            if (row.Anomalies.length > 0) entityProfiles[row.Entity_ID].anomalies += 1;
           });
 
-          const finalSuppliers = Object.values(supplierProfiles).map(profile => {
+          const finalEntities = Object.values(entityProfiles).map(profile => {
              profile.categoryString = Array.from(profile.categoriesSet).join(" ، ");
              profile.categoriesArray = Array.from(profile.categoriesSet);
              delete profile.categoriesSet; 
              return profile;
           }).sort((a, b) => b.totalSpend - a.totalSpend);
 
-          return {
-            schema,
-            records: cleanData,
-            suppliers: finalSuppliers
-          };
+          return { schema, records: cleanData, entities: finalEntities };
         };
 
         // --- UI COMPONENTS ---
@@ -472,7 +543,6 @@
             indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
             red: "bg-red-50 text-red-600 border-red-100"
           };
-
           return (
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-start space-x-4 space-x-reverse transition-all hover:shadow-md">
               <div className={`p-3 rounded-lg ${colorMap[color]}`}>
@@ -487,24 +557,56 @@
           );
         };
 
+        const NavItem = ({ mode, tab, icon: IconC, label, badge, currentMode, currentTab, onClick }) => {
+           const isActive = currentMode === mode && currentTab === tab;
+           const activeClass = mode === 'expenses' ? 'bg-indigo-600 text-white shadow-md' : 'bg-emerald-600 text-white shadow-md';
+           const hoverClass = 'text-slate-400 hover:bg-slate-800 hover:text-white';
+           return (
+               <button onClick={() => onClick(mode, tab)} className={`w-full flex items-center space-x-3 space-x-reverse px-4 py-2.5 rounded-lg transition-colors text-sm font-bold mb-1.5 ${isActive ? activeClass : hoverClass}`}>
+                   <IconC className="w-5 h-5 shrink-0" />
+                   <span className="flex-1 text-right truncate">{label}</span>
+                   {badge > 0 && <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">{badge}</span>}
+               </button>
+           )
+        };
+
         // --- MAIN APPLICATION ---
         function App() {
+          const [appMode, setAppMode] = useState('expenses'); 
+          const [activeTab, setActiveTab] = useState('upload'); 
           const [status, setStatus] = useState('loading_script'); 
-          const [activeTab, setActiveTab] = useState('dashboard');
           const [auditMode, setAuditMode] = useState(false);
-          const [data, setData] = useState({ records: [], suppliers: [], schema: null });
-          const [searchTerm, setSearchTerm] = useState('');
-          const [expandedSuppliers, setExpandedSuppliers] = useState({});
-          const [exportMenuOpen, setExportMenuOpen] = useState(false);
           
-          // State for Supplier-Level Manual Override Editing (Existing)
-          const [editCatData, setEditCatData] = useState({ supId: null, value: '' });
+          const [expensesData, setExpensesData] = useState({ records: [], entities: [], schema: null });
+          const [revenuesData, setRevenuesData] = useState({ records: [], entities: [], schema: null });
+          
+          // State for Isolated Filters: { 'expenses-dashboard': {search:'', start:'', end:'', month:''}, ... }
+          const [pageFilters, setPageFilters] = useState({});
 
-          // NEW: State for Sub-Category Manual Override Editing
-          const [editSubCat, setEditSubCat] = useState({ supId: null, oldCat: '', value: '' });
+          const [expandedEntities, setExpandedEntities] = useState({});
+          const [exportMenuOpen, setExportMenuOpen] = useState(false);
+          const [editSubCat, setEditSubCat] = useState({ entId: null, oldCat: '', value: '' });
+          const [expandedSubCats, setExpandedSubCats] = useState({});
+          const [expandedCategories, setExpandedCategories] = useState({}); 
+          const [editInvoice, setEditInvoice] = useState({ index: null, value: '' });
 
-          // NEW: State for toggling Sub-Categories
-          const [collapsedSubCats, setCollapsedSubCats] = useState({});
+          const currentData = appMode === 'expenses' ? expensesData : revenuesData;
+          const setCurrentData = appMode === 'expenses' ? setExpensesData : setRevenuesData;
+
+          const entLabel = appMode === 'expenses' ? 'المورد' : 'العميل';
+          const entsLabel = appMode === 'expenses' ? 'الموردين' : 'العملاء';
+          const actLabel = appMode === 'expenses' ? 'المصروفات' : 'الإيرادات';
+
+          // Get filters for current tab
+          const filterKey = `${appMode}-${activeTab}`;
+          const currentFilters = pageFilters[filterKey] || { search: '', start: '', end: '', month: '' };
+          
+          const updateFilters = (updates) => {
+              setPageFilters(prev => ({
+                  ...prev,
+                  [filterKey]: { ...currentFilters, ...updates }
+              }));
+          };
 
           useEffect(() => {
             const checkLibs = setInterval(() => {
@@ -516,9 +618,20 @@
             return () => clearInterval(checkLibs);
           }, []);
 
-          const handleFileUpload = (e) => {
+          const handleNavClick = (mode, tab) => {
+              setAppMode(mode);
+              setActiveTab(tab);
+              
+              const targetData = mode === 'expenses' ? expensesData : revenuesData;
+              if (tab !== 'upload' && targetData.records.length === 0) {
+                  setActiveTab('upload');
+              }
+          };
+
+          const handleFileUpload = (e, uploadMode) => {
             const file = e.target.files[0];
             if (!file || !window.XLSX) return;
+            e.target.value = null; 
 
             setStatus('processing');
             const reader = new FileReader();
@@ -528,286 +641,259 @@
                 const wb = window.XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
                 const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
-                
                 const rawArray = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
                 
-                let headerRowIndex = 0;
-                let maxScore = 0;
-                
+                let headerRowIndex = 0; let maxScore = 0;
                 for (let i = 0; i < Math.min(30, rawArray.length); i++) {
                    const row = rawArray[i];
                    if (!row) continue;
                    let score = 0;
                    row.forEach(cell => {
                      const str = String(cell).toLowerCase();
-                     if (/(مورد|بيان|تفاصيل|وصف|صنف|رقم|تاريخ|مبلغ|اجمالي|صافي|دائن|مدين|ضريبة|خاضع|ضريبي)/.test(str) || /^\d{15}$/.test(str)) score++;
+                     if (/(مورد|عميل|زبون|مشتري|بيان|تفاصيل|وصف|صنف|رقم|تاريخ|مبلغ|اجمالي|صافي|دائن|مدين|ضريبة|خاضع|ضريبي)/.test(str) || /^\d{15}$/.test(str)) score++;
                    });
-                   if (score > maxScore) {
-                     maxScore = score;
-                     headerRowIndex = i;
-                   }
+                   if (score > maxScore) { maxScore = score; headerRowIndex = i; }
                 }
 
                 const headers = rawArray[headerRowIndex] || [];
                 const rawData = [];
                 for (let i = headerRowIndex + 1; i < rawArray.length; i++) {
                    const row = rawArray[i];
-                   if (!row || !row.length) continue;
-                   if (row.every(cell => cell === null || cell === '')) continue; 
-
+                   if (!row || !row.length || row.every(cell => cell === null || cell === '')) continue; 
                    const obj = {};
-                   headers.forEach((h, j) => {
-                     if (h) obj[h] = row[j];
-                   });
+                   headers.forEach((h, j) => { if (h) obj[h] = row[j]; });
                    rawData.push(obj);
                 }
 
                 if (rawData.length === 0) {
-                  alert("الملف لا يحتوي على بيانات أو لم نتمكن من العثور على جدول البيانات.");
+                  alert("الملف لا يحتوي على بيانات صالحة.");
                   setStatus('ready');
                   return;
                 }
                 
-                const processed = processFinancialData(rawData);
+                const processed = processFinancialData(rawData, uploadMode);
                 if (processed) {
-                  setData(processed);
-                  setExpandedSuppliers({});
-                  setStatus('done');
+                  if (uploadMode === 'expenses') setExpensesData(processed);
+                  else setRevenuesData(processed);
+                  
+                  setAppMode(uploadMode);
+                  setActiveTab('dashboard');
+                  setStatus('ready');
                 } else {
-                  alert("تم قراءة الملف ولكن لم نتمكن من العثور على أعمدة تخص (الموردين، المبالغ، الخ). يرجى التحقق من الملف.");
+                  alert("لم نتمكن من استخراج الأعمدة بنجاح.");
                   setStatus('ready');
                 }
               } catch (err) {
                 console.error(err);
-                alert("حدث خطأ أثناء تحليل الإكسيل. تأكد من أن الملف غير تالف.");
+                alert("حدث خطأ أثناء تحليل الإكسيل.");
                 setStatus('ready');
               }
             };
             reader.readAsArrayBuffer(file);
           };
 
-          const reset = () => {
-            setData({ records: [], suppliers: [], schema: null });
-            setExpandedSuppliers({});
-            setCollapsedSubCats({});
-            setStatus('ready');
-          };
+          const toggleEntity = (entId) => setExpandedEntities(p => ({ ...p, [entId]: !p[entId] }));
+          const toggleSubCat = (key) => setExpandedSubCats(p => ({ ...p, [key]: !p[key] }));
+          const toggleCategoryView = (catName) => setExpandedCategories(p => ({ ...p, [catName]: !p[catName] }));
 
-          const toggleSupplier = (supId) => {
-            setExpandedSuppliers(prev => ({
-              ...prev,
-              [supId]: !prev[supId]
-            }));
-          };
+          // --- FILTERING DYNAMIC AGGREGATION ---
+          const filteredRecords = useMemo(() => {
+              if (!currentData || !currentData.records) return [];
+              return currentData.records.filter(r => {
+                  const passAudit = auditMode ? r.Anomalies.length > 0 : true;
+                  const passDate = isDateInRange(r.Invoice_Date, currentFilters.start, currentFilters.end, currentFilters.month);
+                  const passSearch = currentFilters.search === '' || 
+                      r.Entity_Normalized_Name.toLowerCase().includes(currentFilters.search.toLowerCase()) || 
+                      r.Invoice_Number.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
+                      (r.Entity_TaxID && r.Entity_TaxID.toLowerCase().includes(currentFilters.search.toLowerCase())) ||
+                      (r.Item_Description && r.Item_Description.toLowerCase().includes(currentFilters.search.toLowerCase())) ||
+                      (r.Category && r.Category.toLowerCase().includes(currentFilters.search.toLowerCase()));
+                  return passAudit && passDate && passSearch;
+              });
+          }, [currentData, auditMode, currentFilters]);
 
-          const toggleSubCat = (key) => {
-            setCollapsedSubCats(prev => ({
-              ...prev,
-              [key]: !prev[key]
-            }));
-          };
+          const totalSpend = filteredRecords.reduce((sum, r) => sum + r.Total_Amount, 0);
+          const totalVAT = filteredRecords.reduce((sum, r) => sum + r.VAT_Amount, 0);
+          const totalTaxable = filteredRecords.reduce((sum, r) => sum + r.Taxable_Amount, 0);
+          const totalNonTaxable = filteredRecords.reduce((sum, r) => sum + r.NonTaxable_Amount, 0);
+          const anomaliesCount = filteredRecords.filter(r => r.Anomalies.length > 0).length;
 
-          // دالة الحفظ للتعديل اليدوي على مستوى المورد (كافة الفواتير)
-          const handleSaveCategory = (e, supId) => {
-            e.stopPropagation();
-            if (!editCatData.value.trim()) return;
+          const filteredEntities = useMemo(() => {
+              if (!currentData || !currentData.entities) return [];
+              const dynamicMap = {};
+              filteredRecords.forEach(r => {
+                  if (!dynamicMap[r.Entity_ID]) {
+                      const orig = currentData.entities.find(s => s.id === r.Entity_ID) || {};
+                      dynamicMap[r.Entity_ID] = { ...orig, invoiceCount: 0, totalNet: 0, totalTaxableNet: 0, totalNonTaxableNet: 0, totalVAT: 0, totalSpend: 0, anomalies: 0, categoriesSet: new Set() };
+                  }
+                  const s = dynamicMap[r.Entity_ID];
+                  s.invoiceCount++; s.totalNet += r.Net_Amount; s.totalTaxableNet += r.Taxable_Amount; s.totalNonTaxableNet += r.NonTaxable_Amount; s.totalVAT += r.VAT_Amount; s.totalSpend += r.Total_Amount;
+                  if (r.Anomalies.length > 0) s.anomalies++;
+                  s.categoriesSet.add(r.Category);
+              });
+              return Object.values(dynamicMap).map(s => {
+                  s.categoriesArray = Array.from(s.categoriesSet);
+                  s.categoryString = s.categoriesArray.join(" ، ");
+                  return s;
+              }).sort((a,b) => b.totalSpend - a.totalSpend);
+          }, [filteredRecords, currentData]);
 
-            const updatedRecords = data.records.map(r => {
-                if (r.Supplier_ID === supId) {
-                    return { ...r, Category: editCatData.value };
-                }
-                return r;
-            });
+          const categoriesArray = useMemo(() => {
+              const map = {};
+              filteredRecords.forEach(r => {
+                  const cat = r.Category || 'غير مصنف';
+                  if(!map[cat]) map[cat] = { name: cat, invoiceCount: 0, totalTaxable: 0, totalNonTaxable: 0, totalVAT: 0, totalSpend: 0, invoices: [] };
+                  const c = map[cat];
+                  c.invoiceCount++; c.totalTaxable += r.Taxable_Amount; c.totalNonTaxable += r.NonTaxable_Amount; c.totalVAT += r.VAT_Amount; c.totalSpend += r.Total_Amount;
+                  c.invoices.push(r);
+              });
+              return Object.values(map).sort((a,b) => b.totalSpend - a.totalSpend);
+          }, [filteredRecords]);
 
-            const updatedSuppliers = data.suppliers.map(s => {
-                if (s.id === supId) {
-                    return { 
-                        ...s, 
-                        categoryString: editCatData.value,
-                        categoriesArray: [editCatData.value]
-                    };
-                }
-                return s;
-            });
-
-            setData({ ...data, records: updatedRecords, suppliers: updatedSuppliers });
-            setEditCatData({ supId: null, value: '' });
-          };
-
-          // NEW: دالة الحفظ للتعديل اليدوي للتصنيف الفرعي (فقط فواتير هذا التصنيف داخل المورد)
-          const handleSaveSubCategory = (e, supId, oldCat) => {
+          // --- MANUAL OVERRIDES ---
+          const handleSaveSubCategory = (e, entId, oldCat) => {
             e.stopPropagation();
             if (!editSubCat.value.trim() || editSubCat.value === oldCat) {
-                setEditSubCat({ supId: null, oldCat: '', value: '' });
+                setEditSubCat({ entId: null, oldCat: '', value: '' });
                 return;
             }
-
             const newCat = editSubCat.value;
-
-            // تحديث فقط السجلات التي تتبع هذا المورد وهذا التصنيف القديم
-            const updatedRecords = data.records.map(r => {
-                if (r.Supplier_ID === supId && r.Category === oldCat) {
-                    return { ...r, Category: newCat };
-                }
+            const updatedRecords = currentData.records.map(r => {
+                if (r.Entity_ID === entId && r.Category === oldCat) return { ...r, Category: newCat };
                 return r;
             });
+            updateCurrentDataState(updatedRecords);
+            setEditSubCat({ entId: null, oldCat: '', value: '' });
+          };
 
-            // إعادة حساب التصنيفات المدرجة في ملف المورد الرئيسي
-            const updatedSuppliers = data.suppliers.map(s => {
-                if (s.id === supId) {
-                    const supRecords = updatedRecords.filter(r => r.Supplier_ID === supId);
-                    const newCatSet = new Set(supRecords.map(r => r.Category));
-                    return { 
-                        ...s, 
-                        categoryString: Array.from(newCatSet).join(" ، "),
-                        categoriesArray: Array.from(newCatSet)
-                    };
+          const handleSaveInvoiceCategory = (originalIndex) => {
+            if (!editInvoice.value.trim()) {
+                setEditInvoice({ index: null, value: '' });
+                return;
+            }
+            const updatedRecords = currentData.records.map(r => {
+                if (r._originalIndex === originalIndex) return { ...r, Category: editInvoice.value };
+                return r;
+            });
+            updateCurrentDataState(updatedRecords);
+            setEditInvoice({ index: null, value: '' });
+          };
+          
+          const handleSaveGlobalCategory = (oldCatName, newCatName) => {
+             if (!newCatName.trim() || newCatName === oldCatName) return;
+             const updatedRecords = currentData.records.map(r => {
+                 if (r.Category === oldCatName) return { ...r, Category: newCatName };
+                 return r;
+             });
+             updateCurrentDataState(updatedRecords);
+          }
+
+          const updateCurrentDataState = (updatedRecords) => {
+            const profiles = {};
+            updatedRecords.forEach(row => {
+                if (!profiles[row.Entity_ID]) {
+                    profiles[row.Entity_ID] = { id: row.Entity_ID, name: row.Entity_Normalized_Name, taxId: row.Entity_TaxID, categoriesSet: new Set(), invoiceCount: 0, totalNet: 0, totalTaxableNet: 0, totalNonTaxableNet: 0, totalVAT: 0, totalSpend: 0, anomalies: 0 };
                 }
-                return s;
+                if (!profiles[row.Entity_ID].taxId && row.Entity_TaxID) profiles[row.Entity_ID].taxId = row.Entity_TaxID;
+                profiles[row.Entity_ID].categoriesSet.add(row.Category);
+                profiles[row.Entity_ID].invoiceCount += 1;
+                profiles[row.Entity_ID].totalNet += row.Net_Amount;
+                profiles[row.Entity_ID].totalTaxableNet += row.Taxable_Amount;
+                profiles[row.Entity_ID].totalNonTaxableNet += row.NonTaxable_Amount;
+                profiles[row.Entity_ID].totalVAT += row.VAT_Amount;
+                profiles[row.Entity_ID].totalSpend += row.Total_Amount;
+                if (row.Anomalies.length > 0) profiles[row.Entity_ID].anomalies += 1;
             });
 
-            setData({ ...data, records: updatedRecords, suppliers: updatedSuppliers });
-            setEditSubCat({ supId: null, oldCat: '', value: '' });
-          };
+            const finalEntities = Object.values(profiles).map(profile => {
+                profile.categoryString = Array.from(profile.categoriesSet).join(" ، ");
+                profile.categoriesArray = Array.from(profile.categoriesSet);
+                delete profile.categoriesSet; 
+                return profile;
+            }).sort((a, b) => b.totalSpend - a.totalSpend);
+
+            setCurrentData({ ...currentData, records: updatedRecords, entities: finalEntities });
+          }
 
           // --- EXPORT FUNCTIONS ---
           const exportToExcel = () => {
             setExportMenuOpen(false);
-            if (!data.suppliers.length) return;
+            if (!filteredEntities.length) return;
 
             const wb = window.XLSX.utils.book_new();
 
-            const suppliersExport = data.suppliers.map(s => ({
-                "اسم المورد / الجهة": s.name,
+            const entsExport = filteredEntities.map(s => ({
+                [`اسم ${entLabel}`]: s.name,
                 "الرقم الضريبي": s.taxId || "غير متوفر",
-                "التوجيهات المحاسبية (متعدد)": s.categoryString, 
-                "إجمالي عدد الفواتير": s.invoiceCount,
-                "الأساس الخاضع للضريبة": s.totalTaxableNet,
-                "المبلغ غير الخاضع/المعفى": s.totalNonTaxableNet,
-                "إجمالي قيمة الضريبة": s.totalVAT,
-                "إجمالي المبلغ المستحق": s.totalSpend,
-                "أخطاء وتناقضات": s.anomalies
+                "التوجيهات المحاسبية": s.categoryString, 
+                "العمليات": s.invoiceCount,
+                "الخاضع": s.totalTaxableNet,
+                "غير الخاضع": s.totalNonTaxableNet,
+                "الضريبة": s.totalVAT,
+                "الإجمالي": s.totalSpend,
+                "ملاحظات": s.anomalies
             }));
-            const ws1 = window.XLSX.utils.json_to_sheet(suppliersExport);
-            window.XLSX.utils.book_append_sheet(wb, ws1, "ملخص الموردين والتوجيه");
+            const ws1 = window.XLSX.utils.json_to_sheet(entsExport);
+            window.XLSX.utils.book_append_sheet(wb, ws1, `ملخص ${entsLabel}`);
 
-            const recordsExport = data.records.map(r => ({
-                "رقم المستند/الفاتورة": r.Invoice_Number,
-                "تاريخ الفاتورة": r.Invoice_Date,
-                "اسم المورد": r.Supplier_Normalized_Name,
-                "الرقم الضريبي": r.Supplier_TaxID || "غير متوفر",
+            const recordsExport = filteredRecords.map(r => ({
+                "رقم المستند": r.Invoice_Number,
+                "التاريخ": r.Invoice_Date,
+                [`اسم ${entLabel}`]: r.Entity_Normalized_Name,
                 "البيان / الوصف": r.Item_Description || "-", 
-                "التوجيه المحاسبي الدقيق": r.Category, 
-                "المبلغ الخاضع للضريبة": r.Taxable_Amount,
-                "المبلغ غير الخاضع": r.NonTaxable_Amount,
-                "قيمة الضريبة": r.VAT_Amount,
-                "إجمالي الفاتورة": r.Total_Amount,
-                "ملاحظات التدقيق": r.Anomalies.length > 0 ? r.Anomalies.join(" | ") : "سليم"
+                "التوجيه المحاسبي": r.Category, 
+                "الخاضع": r.Taxable_Amount,
+                "غير خاضع": r.NonTaxable_Amount,
+                "الضريبة": r.VAT_Amount,
+                "الإجمالي": r.Total_Amount,
+                "ملاحظات": r.Anomalies.length > 0 ? r.Anomalies.join(" | ") : "سليم"
             }));
             const ws2 = window.XLSX.utils.json_to_sheet(recordsExport);
-            window.XLSX.utils.book_append_sheet(wb, ws2, "سجل المشتريات التفصيلي");
+            window.XLSX.utils.book_append_sheet(wb, ws2, "السجل التفصيلي");
 
-            window.XLSX.writeFile(wb, "تقرير_التدقيق_المالي_مطاعم.xlsx");
+            const catExportArray = categoriesArray.map(c => ({
+                "التصنيف المحاسبي": c.name,
+                "العمليات": c.invoiceCount,
+                "الخاضع": c.totalTaxable,
+                "غير خاضع": c.totalNonTaxable,
+                "الضريبة": c.totalVAT,
+                "الإجمالي": c.totalSpend
+            }));
+            const ws3 = window.XLSX.utils.json_to_sheet(catExportArray);
+            window.XLSX.utils.book_append_sheet(wb, ws3, "ميزان التصنيفات");
+
+            window.XLSX.writeFile(wb, `تقرير_${actLabel}_مطاعم.xlsx`);
           };
 
           const exportToPDF = () => {
             setExportMenuOpen(false);
-            if (!data.suppliers.length) return;
-            
+            if (!filteredEntities.length) return;
             setStatus('exporting');
-            
             setTimeout(() => {
                 const element = document.getElementById('pdf-report-template');
-                if (!element) {
-                    console.error("PDF template element not found!");
-                    setStatus('done');
-                    return;
-                }
-                
                 element.style.display = 'block'; 
-
                 const opt = {
-                  margin:       0.4,
-                  filename:     'تقرير_التدقيق_المالي_مطاعم.pdf',
-                  image:        { type: 'jpeg', quality: 0.98 },
-                  html2canvas:  { scale: 2, useCORS: true },
-                  jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+                  margin: 0.4, filename: `تقرير_${actLabel}_مطاعم.pdf`,
+                  image: { type: 'jpeg', quality: 0.98 },
+                  html2canvas: { scale: 2, useCORS: true },
+                  jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
                 };
-
                 window.html2pdf().set(opt).from(element).save().then(() => {
-                    element.style.display = 'none'; 
-                    setStatus('done');
+                    element.style.display = 'none'; setStatus('ready');
                 }).catch(err => {
-                    console.error("PDF Export Error: ", err);
-                    element.style.display = 'none';
-                    setStatus('done');
-                    alert("حدث خطأ أثناء إنشاء ملف PDF.");
+                    element.style.display = 'none'; setStatus('ready');
+                    alert("حدث خطأ أثناء التصدير.");
                 });
             }, 500);
           };
 
-          const totalSpend = data.records.reduce((sum, r) => sum + r.Total_Amount, 0);
-          const totalVAT = data.records.reduce((sum, r) => sum + r.VAT_Amount, 0);
-          const totalTaxable = data.records.reduce((sum, r) => sum + r.Taxable_Amount, 0);
-          const totalNonTaxable = data.records.reduce((sum, r) => sum + r.NonTaxable_Amount, 0);
-          const anomaliesCount = data.records.filter(r => r.Anomalies.length > 0).length;
-
-          const filteredSuppliers = data.suppliers.filter(s => 
-            s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (s.taxId && s.taxId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (s.categoryString && s.categoryString.toLowerCase().includes(searchTerm.toLowerCase()))
-          );
-
-          const filteredRecords = data.records.filter(r => 
-            (auditMode ? r.Anomalies.length > 0 : true) &&
-            (r.Supplier_Normalized_Name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-             r.Invoice_Number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             (r.Supplier_TaxID && r.Supplier_TaxID.toLowerCase().includes(searchTerm.toLowerCase())) ||
-             (r.Item_Description && r.Item_Description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-             (r.Category && r.Category.toLowerCase().includes(searchTerm.toLowerCase())))
-          );
-
           if (status === 'loading_script') {
-            return <div className="h-screen flex items-center justify-center bg-slate-50 text-slate-500"><Activity className="animate-spin mr-2"/> تهيئة النظام ومكتبات التصدير...</div>;
-          }
-
-          if (status === 'idle' || status === 'ready') {
-            return (
-              <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-                <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-                  <div className="bg-slate-900 p-8 text-center">
-                    <div className="inline-flex items-center justify-center p-4 bg-indigo-500/20 rounded-full mb-4">
-                      <Zap className="w-10 h-10 text-indigo-400" />
-                    </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">النظام المالي - الذكاء الاصطناعي</h1>
-                    <p className="text-slate-400">توجيه محاسبي آلي وذكي للفواتير (لنشاط المطاعم والحلويات)</p>
-                  </div>
-                  
-                  <div className="p-8">
-                    <div className="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:bg-slate-50 transition-colors relative">
-                      <input 
-                        type="file" 
-                        accept=".xlsx, .xls, .csv" 
-                        onChange={handleFileUpload}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      />
-                      <FileSpreadsheet className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-slate-800 mb-1">رفع كشف المشتريات / الفواتير</h3>
-                      <p className="text-sm text-slate-500 mb-4">يقوم النظام بالتوجيه المحاسبي الدقيق لكل فاتورة على حدة بناءً على وصفها (أصول، تكلفة مبيعات، مصروفات) وفقاً لمعايير SOCPA.</p>
-                      <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium pointer-events-none">
-                        استعراض الملف
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
+            return <div className="h-screen flex items-center justify-center bg-slate-900 text-white"><Activity className="animate-spin mr-2"/> تهيئة النظام الشامل (ERP)...</div>;
           }
 
           return (
-            <div>
-              {/* قائمة الفئات المقترحة للتعديل اليدوي */}
+            <div className="flex h-screen overflow-hidden bg-slate-50" dir="rtl">
+              
               <datalist id="acc-categories">
                   <option value="أصول ثابتة - أجهزة حاسب آلي ومعدات" />
                   <option value="تكلفة مبيعات - مواد غذائية (خامات ومكونات)" />
@@ -816,7 +902,6 @@
                   <option value="مواد وأدوات تنظيف متنوعة" />
                   <option value="صيانة وتشغيل مباني ومرافق" />
                   <option value="صيانة سيارات ومعدات نقل" />
-                  <option value="صيانة آلات ومعدات التشغيل" />
                   <option value="صيانة أجهزة إلكترونية وتقنية" />
                   <option value="مواد بترولية، محروقات وغاز" />
                   <option value="إستشارات وأتعاب مهنية" />
@@ -838,39 +923,41 @@
                   <option value="تدريب وتطوير كوادر" />
                   <option value="مصروفات وأبحاث وتطوير (R&D)" />
                   <option value="نقل وخدمات لوجستية وتوصيل" />
-                  <option value="تجارة وتوريدات متنوعة عامة" />
                   <option value="مصروفات تشغيلية متنوعة" />
+                  <option value="إيرادات تطبيقات التوصيل" />
+                  <option value="إيرادات حفلات ومناسبات" />
+                  <option value="إيرادات مبيعات جملة (B2B)" />
+                  <option value="مبيعات حلويات ومخبوزات" />
+                  <option value="مبيعات مشروبات وقهوة" />
+                  <option value="مبيعات مطعم (داخلي/سفري)" />
+                  <option value="مبيعات نقدية ونقاط بيع (POS)" />
+                  <option value="إيرادات تشغيلية أخرى" />
               </datalist>
 
-              {/* --- FULL SCREEN OVERLAY FOR PROCESSING/EXPORTING --- */}
+              {/* OVERLAY */}
               {(status === 'processing' || status === 'exporting') && (
-                <div className="h-screen flex flex-col items-center justify-center bg-slate-50/90 backdrop-blur-sm z-50 fixed inset-0">
-                  <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-                  <h2 className="text-xl font-semibold text-slate-800">{status === 'exporting' ? 'جاري إعداد وتجهيز ملف PDF...' : 'جاري التدقيق والتوجيه المحاسبي...'}</h2>
-                  <p className="text-slate-500 mt-2 text-sm text-center">{status === 'exporting' ? 'يرجى الانتظار، يتم الآن رسم الجداول وتنسيقها' : 'يتم تحليل كل فاتورة على حدة وتوجيهها للحساب الصحيح (تكلفة مبيعات، منافع، أصول، إلخ).'}</p>
+                <div className="absolute z-50 inset-0 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm text-white">
+                  <div className="w-16 h-16 border-4 border-indigo-400 border-t-white rounded-full animate-spin mb-4"></div>
+                  <h2 className="text-xl font-bold">{status === 'exporting' ? 'جاري تصدير التقرير...' : 'جاري التدقيق والتوجيه المحاسبي (ERP)...'}</h2>
                 </div>
               )}
 
-              {/* --- MAIN UI (Hidden visually if processing, but kept in DOM) --- */}
-              <div className={`min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans ${(status === 'processing' || status === 'exporting') ? 'hidden' : ''}`}>
-                
-                {/* --- HIDDEN PDF REPORT TEMPLATE --- */}
-                <div id="pdf-report-template" style={{ display: 'none', background: 'white', padding: '40px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' }}>
-                   {/* Header */}
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #1e293b', paddingBottom: '20px', marginBottom: '30px' }}>
+              {/* --- HIDDEN PDF REPORT TEMPLATE --- */}
+              <div id="pdf-report-template" style={{ display: 'none', background: 'white', padding: '40px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `3px solid ${appMode==='expenses'?'#1e293b':'#064e3b'}`, paddingBottom: '20px', marginBottom: '30px' }}>
                        <div>
-                           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>تقرير ذكاء البيانات المالية والتوجيه المحاسبي</h1>
+                           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>تقرير ميزان المراجعة لـ {actLabel}</h1>
                            <p style={{ color: '#64748b', marginTop: '5px', fontSize: '14px' }}>تاريخ التصدير: {new Date().toLocaleDateString('ar-SA')}</p>
+                           {(currentFilters.start || currentFilters.end || currentFilters.month) && <p style={{ color: '#4f46e5', marginTop: '5px', fontSize: '12px', fontWeight: 'bold' }}>الفترة: {currentFilters.month || `${currentFilters.start} إلى ${currentFilters.end}`}</p>}
                        </div>
-                       <div style={{ display: 'flex', alignItems: 'center', color: '#4f46e5', fontWeight: 'bold', fontSize: '24px' }}>
-                           FinIntel AI <Zap className="w-8 h-8 mr-2"/>
+                       <div style={{ display: 'flex', alignItems: 'center', color: appMode==='expenses'?'#4f46e5':'#059669', fontWeight: 'bold', fontSize: '24px' }}>
+                           FinIntel ERP {appMode==='expenses' ? <Zap className="w-8 h-8 mr-2"/> : <TrendingUp className="w-8 h-8 mr-2"/>}
                        </div>
                    </div>
 
-                   {/* KPIs */}
                    <div style={{ display: 'flex', gap: '15px', marginBottom: '30px' }}>
                       <div style={{ flex: 1, padding: '15px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                         <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 5px 0' }}>الإجمالي الكلي للمشتريات</p>
+                         <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 5px 0' }}>الإجمالي الكلي</p>
                          <h3 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>{formatCurrency(totalSpend)}</h3>
                       </div>
                       <div style={{ flex: 1, padding: '15px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px' }}>
@@ -878,447 +965,692 @@
                          <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1d4ed8', margin: 0 }}>{formatCurrency(totalTaxable)}</h3>
                       </div>
                       <div style={{ flex: 1, padding: '15px', background: '#ecfdf5', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
-                         <p style={{ fontSize: '12px', color: '#10b981', margin: '0 0 5px 0' }}>مشتريات غير خاضعة / معفاة</p>
+                         <p style={{ fontSize: '12px', color: '#10b981', margin: '0 0 5px 0' }}>مبلغ غير خاضع / معفى</p>
                          <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#047857', margin: 0 }}>{formatCurrency(totalNonTaxable)}</h3>
                       </div>
                       <div style={{ flex: 1, padding: '15px', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '8px' }}>
-                         <p style={{ fontSize: '12px', color: '#4f46e5', margin: '0 0 5px 0' }}>إجمالي الضريبة المستخرجة</p>
+                         <p style={{ fontSize: '12px', color: '#4f46e5', margin: '0 0 5px 0' }}>إجمالي الضريبة</p>
                          <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#4338ca', margin: 0 }}>{formatCurrency(totalVAT)}</h3>
                       </div>
                    </div>
 
-                   {/* Suppliers Table */}
-                   <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', marginBottom: '15px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px' }}>ملخص حسابات الموردين والأرصدة المستحقة</h2>
+                   <h2 className="page-break" style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', marginBottom: '15px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px' }}>ملخص التصنيفات المحاسبية (ميزان المراجعة)</h2>
                    <table style={{ width: '100%', textAlign: 'right', fontSize: '12px', borderCollapse: 'collapse', marginBottom: '40px' }}>
                       <thead>
-                         <tr style={{ backgroundColor: '#1e293b', color: 'white' }}>
-                             <th style={{ padding: '10px', border: '1px solid #334155' }}>الجهة / المورد</th>
-                             <th style={{ padding: '10px', border: '1px solid #334155' }}>التوجيهات المحاسبية (أنشطة المورد)</th>
-                             <th style={{ padding: '10px', border: '1px solid #334155' }}>الرقم الضريبي</th>
+                         <tr style={{ backgroundColor: appMode==='expenses'?'#1e293b':'#064e3b', color: 'white' }}>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>التصنيف المحاسبي</th>
                              <th style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center' }}>العمليات</th>
-                             <th style={{ padding: '10px', border: '1px solid #334155' }}>خاضع للضريبة</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>خاضع</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>غير خاضع</th>
                              <th style={{ padding: '10px', border: '1px solid #334155' }}>الضريبة</th>
-                             <th style={{ padding: '10px', border: '1px solid #334155' }}>الإجمالي المستحق</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>الإجمالي</th>
                          </tr>
                       </thead>
                       <tbody>
-                         {data.suppliers.map((s, i) => (
+                         {categoriesArray.map((c, i) => (
                             <tr key={i} style={{ backgroundColor: i % 2 === 0 ? '#f8fafc' : 'white' }}>
-                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#0f172a' }}>{s.name}</td>
-                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', color: '#475569', fontSize: '11px', maxWidth: '200px' }}>{s.categoryString}</td>
-                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', color: '#475569' }}>{s.taxId || '-'}</td>
-                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', textAlign: 'center', color: '#475569' }}>{s.invoiceCount}</td>
-                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', color: '#2563eb' }}>{formatCurrency(s.totalTaxableNet)}</td>
-                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', color: '#475569' }}>{formatCurrency(s.totalVAT)}</td>
-                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#0f172a' }}>{formatCurrency(s.totalSpend)}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#0f172a' }}>{c.name}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', textAlign: 'center' }}>{c.invoiceCount}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0' }}>{formatCurrency(c.totalTaxable)}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0' }}>{formatCurrency(c.totalNonTaxable)}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0' }}>{formatCurrency(c.totalVAT)}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', fontWeight: 'bold' }}>{formatCurrency(c.totalSpend)}</td>
                             </tr>
                          ))}
                       </tbody>
                    </table>
 
-                   {/* Anomalies Table (If any) */}
-                   {anomaliesCount > 0 && (
-                     <div>
-                        <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626', marginBottom: '15px', borderBottom: '1px solid #fecaca', paddingBottom: '10px' }}>سجل الأخطاء والتناقضات المحاسبية المكتشفة ({anomaliesCount})</h2>
-                        <table style={{ width: '100%', textAlign: 'right', fontSize: '13px', borderCollapse: 'collapse' }}>
-                           <thead>
-                              <tr style={{ backgroundColor: '#fef2f2', color: '#991b1b' }}>
-                                 <th style={{ padding: '10px', border: '1px solid #fca5a5' }}>المورد</th>
-                                 <th style={{ padding: '10px', border: '1px solid #fca5a5' }}>رقم الفاتورة</th>
-                                 <th style={{ padding: '10px', border: '1px solid #fca5a5' }}>وصف الخطأ / التناقض</th>
-                              </tr>
-                           </thead>
-                           <tbody>
-                              {data.records.filter(r => r.Anomalies.length > 0).map((r, i) => (
-                                 <tr key={i} style={{ backgroundColor: 'white' }}>
-                                    <td style={{ padding: '10px', border: '1px solid #fecaca', fontWeight: 'bold' }}>{r.Supplier_Normalized_Name}</td>
-                                    <td style={{ padding: '10px', border: '1px solid #fecaca' }}>{r.Invoice_Number}</td>
-                                    <td style={{ padding: '10px', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 'bold' }}>{r.Anomalies.join(" | ")}</td>
-                                 </tr>
-                              ))}
-                           </tbody>
-                        </table>
-                     </div>
-                   )}
+                   <h2 className="page-break" style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', marginBottom: '15px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px' }}>ملخص حسابات {entsLabel}</h2>
+                   <table style={{ width: '100%', textAlign: 'right', fontSize: '12px', borderCollapse: 'collapse', marginBottom: '40px' }}>
+                      <thead>
+                         <tr style={{ backgroundColor: appMode==='expenses'?'#1e293b':'#064e3b', color: 'white' }}>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>اسم {entLabel}</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>الرقم الضريبي</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center' }}>العمليات</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>خاضع</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>الضريبة</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>الإجمالي</th>
+                         </tr>
+                      </thead>
+                      <tbody>
+                         {filteredEntities.map((s, i) => (
+                            <tr key={i} style={{ backgroundColor: i % 2 === 0 ? '#f8fafc' : 'white' }}>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', fontWeight: 'bold' }}>{s.name}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0' }}>{s.taxId || '-'}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', textAlign: 'center' }}>{s.invoiceCount}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0' }}>{formatCurrency(s.totalTaxableNet)}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0' }}>{formatCurrency(s.totalVAT)}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', fontWeight: 'bold' }}>{formatCurrency(s.totalSpend)}</td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+              </div>
+              {/* --- END HIDDEN PDF REPORT TEMPLATE --- */}
+
+              {/* UNIFIED SIDEBAR */}
+              <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 overflow-y-auto border-l border-slate-800">
+                <div className="p-6 flex items-center space-x-3 space-x-reverse border-b border-slate-800 sticky top-0 bg-slate-900 z-10">
+                  <FolderOpen className="w-8 h-8 text-white" />
+                  <span className="text-xl font-bold text-white tracking-tight">FinIntel ERP</span>
                 </div>
-                {/* --- END HIDDEN PDF REPORT TEMPLATE --- */}
-
-
-                {/* SIDEBAR */}
-                <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col transition-all shrink-0">
-                  <div className="p-6 flex items-center space-x-3 space-x-reverse border-b border-slate-800">
-                    <Zap className="w-8 h-8 text-indigo-400" />
-                    <span className="text-xl font-bold text-white tracking-tight">FinIntel</span>
-                  </div>
-                  
-                  <nav className="flex-1 px-4 space-y-2 mt-6">
-                    {[
-                      { id: 'dashboard', label: 'ملخص التحليل', icon: BarChart3 },
-                      { id: 'grouped_purchases', label: 'سجل المشتريات المجمع', icon: Layers }, 
-                      { id: 'audit', label: 'سجل الأخطاء والتناقضات', icon: ShieldAlert, badge: anomaliesCount }
-                    ].map(item => (
-                      <button
-                        key={item.id}
-                        onClick={() => { setActiveTab(item.id); setAuditMode(item.id === 'audit'); }}
-                        className={`w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-lg transition-colors ${
-                          activeTab === item.id ? 'bg-indigo-600 text-white shadow-md' : 'hover:bg-slate-800 hover:text-white'
-                        }`}
-                      >
-                        <item.icon className="w-5 h-5" />
-                        <span className="font-medium flex-1 text-right">{item.label}</span>
-                        {item.badge > 0 && (
-                          <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                            {item.badge}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </nav>
-
-                  <div className="p-4 border-t border-slate-800">
-                    <button onClick={reset} className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center justify-center">
-                      <Upload className="w-4 h-4 ml-2" /> إدراج ملف جديد
-                    </button>
-                  </div>
-                </aside>
-
-                {/* MAIN CONTENT */}
-                <main className="flex-1 overflow-auto bg-slate-50/50">
-                  <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-                    <div>
-                      <h2 className="text-2xl font-extrabold text-slate-800">
-                        {activeTab === 'dashboard' ? 'ملخص التحليل العام' : 
-                         activeTab === 'grouped_purchases' ? 'سجل المشتريات المجمع (مفصل لكل مورد)' :
-                         'التدقيق واكتشاف التناقضات المحاسبية'}
-                      </h2>
-                      <p className="text-sm text-slate-500 font-medium mt-1">
-                        تم استخراج {data.records.length.toLocaleString()} عملية موزعة على {data.suppliers.length} حساب مورد.
-                      </p>
+                
+                <div className="flex-1 pb-6">
+                    {/* Expenses Module Nav */}
+                    <div className="p-4 uppercase text-[11px] font-black text-indigo-400 tracking-widest mt-2 flex items-center">
+                        <ShoppingCart className="w-4 h-4 ml-2 opacity-70" /> المصروفات والموردين
                     </div>
-                    
-                    <div className="flex items-center space-x-4 space-x-reverse">
-                      <div className="relative">
-                        <Search className="w-5 h-5 text-slate-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
-                        <input 
-                          type="text" 
-                          placeholder="ابحث عن مورد، بيان، رقم ضريبي، توجيه..." 
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pr-10 pl-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-72 bg-slate-50"
-                        />
+                    <div className="px-3">
+                        <NavItem mode="expenses" tab="upload" icon={UploadIcon} label="رفع ملف المشتريات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="expenses" tab="dashboard" icon={BarChart3} label="لوحة القيادة" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="expenses" tab="categories_summary" icon={PieChart} label="ميزان المصروفات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="expenses" tab="grouped_purchases" icon={Layers} label="سجل الموردين" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="expenses" tab="audit" icon={ShieldAlert} label="التناقضات والأخطاء" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} badge={appMode==='expenses' ? anomaliesCount : 0} />
+                    </div>
+
+                    {/* Revenues Module Nav */}
+                    <div className="p-4 uppercase text-[11px] font-black text-emerald-400 tracking-widest mt-4 border-t border-slate-800/50 flex items-center">
+                        <Wallet className="w-4 h-4 ml-2 opacity-70" /> الإيرادات والعملاء
+                    </div>
+                    <div className="px-3">
+                        <NavItem mode="revenues" tab="upload" icon={UploadIcon} label="رفع ملف المبيعات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="revenues" tab="dashboard" icon={BarChart3} label="لوحة القيادة" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="revenues" tab="categories_summary" icon={PieChart} label="ميزان الإيرادات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="revenues" tab="grouped_purchases" icon={Layers} label="سجل العملاء" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="revenues" tab="audit" icon={ShieldAlert} label="التناقضات والأخطاء" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} badge={appMode==='revenues' ? anomaliesCount : 0} />
+                    </div>
+                </div>
+              </aside>
+
+              {/* MAIN WORKSPACE */}
+              <main className={`flex-1 flex flex-col h-screen overflow-hidden ${appMode === 'expenses' ? 'bg-slate-50' : 'bg-emerald-50/20'}`}>
+                
+                {/* UPLOAD SCREEN */}
+                {activeTab === 'upload' && (
+                  <div className="flex-1 flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
+                    <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                      <div className={`p-10 text-center ${appMode === 'expenses' ? 'bg-indigo-600' : 'bg-emerald-600'}`}>
+                        <div className="inline-flex items-center justify-center p-5 bg-white/20 rounded-full mb-5 shadow-inner">
+                          {appMode === 'expenses' ? <ShoppingCart className="w-12 h-12 text-white" /> : <Wallet className="w-12 h-12 text-white" />}
+                        </div>
+                        <h1 className="text-3xl font-extrabold text-white mb-3">
+                            {appMode === 'expenses' ? 'قسم المشتريات والمصروفات' : 'قسم المبيعات والإيرادات'}
+                        </h1>
+                        <p className="text-white/80 font-medium text-lg">ارفع ملف الإكسيل ليقوم الذكاء الاصطناعي بتوجيهه محاسبياً</p>
+                      </div>
+                      <div className="p-10">
+                        <div className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer relative ${appMode === 'expenses' ? 'border-indigo-300 hover:bg-indigo-50 hover:border-indigo-500' : 'border-emerald-300 hover:bg-emerald-50 hover:border-emerald-500'}`}>
+                          <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => handleFileUpload(e, appMode)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                          <UploadIcon className={`w-16 h-16 mx-auto mb-6 opacity-70 ${appMode === 'expenses' ? 'text-indigo-500' : 'text-emerald-500'}`} />
+                          <h3 className="text-2xl font-bold text-slate-800 mb-2">اسحب وأفلت الملف هنا</h3>
+                          <p className="text-slate-500 mb-6">أو انقر لاختيار ملف من جهازك (.xlsx, .csv)</p>
+                          <button className={`text-white px-8 py-3 rounded-xl font-bold shadow-md ${appMode === 'expenses' ? 'bg-indigo-600' : 'bg-emerald-600'}`}>
+                            استعراض الملفات
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* APP SCREENS WITH HEADER */}
+                {activeTab !== 'upload' && (
+                  <Fragment>
+                    <header className="bg-white border-b border-slate-200 px-8 py-4 flex flex-col xl:flex-row items-center justify-between shadow-sm gap-4 shrink-0 z-10">
+                      <div className="w-full xl:w-auto">
+                        <h2 className="text-2xl font-extrabold text-slate-800 flex items-center">
+                          {activeTab === 'dashboard' && 'ملخص التحليل العام'}
+                          {activeTab === 'categories_summary' && 'ميزان المراجعة (التصنيفات المحاسبية)'}
+                          {activeTab === 'grouped_purchases' && `سجل ${actLabel} المجمع`}
+                          {activeTab === 'audit' && 'التدقيق واكتشاف التناقضات'}
+                          <span className={`mr-3 px-2.5 py-0.5 text-xs font-black rounded-md ${appMode === 'expenses' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                              {appMode === 'expenses' ? 'المصروفات' : 'الإيرادات'}
+                          </span>
+                        </h2>
+                        <p className="text-sm text-slate-500 font-medium mt-1.5">
+                          تم معالجة <strong className="text-slate-700">{filteredRecords.length.toLocaleString()}</strong> عملية لـ <strong className="text-slate-700">{filteredEntities.length}</strong> {entLabel} في هذه الفترة.
+                        </p>
                       </div>
                       
-                      {/* Export Dropdown Button */}
-                      <div className="relative">
-                        <button 
-                          onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                          className="flex items-center px-4 py-2 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-700 transition-colors shadow-sm border border-slate-700 text-sm"
-                        >
-                          <Download className="w-4 h-4 ml-2" /> تصدير
-                        </button>
-                        
-                        {exportMenuOpen && (
-                          <div className="absolute left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50">
-                            <button onClick={exportToExcel} className="w-full text-right px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 border-b border-slate-100 flex items-center transition-colors">
-                               <FileSpreadsheet className="w-4 h-4 ml-2 text-emerald-600" /> Excel استخراج
-                            </button>
-                            <button onClick={exportToPDF} className="w-full text-right px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-red-600 flex items-center transition-colors">
-                               <FileText className="w-4 h-4 ml-2 text-red-500" /> PDF تقرير مطبوع
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </header>
-
-                  <div className="p-8">
-                    {/* DASHBOARD TAB */}
-                    {activeTab === 'dashboard' && (
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          <Card title="الإجمالي الكلي للعمليات" value={formatCurrency(totalSpend)} icon={TrendingUp} color="indigo" />
-                          <Card title="الأساس الخاضع للضريبة" value={formatCurrency(totalTaxable)} icon={Layers} color="blue" />
-                          <Card title="المشتريات غير الخاضعة/المعفاة" value={formatCurrency(totalNonTaxable)} icon={FileText} color="emerald" />
-                          <Card title="إجمالي الضريبة المستخرجة" value={formatCurrency(totalVAT)} icon={Activity} color="indigo" />
-                          <Card title="إجمالي الموردين" value={data.suppliers.length} subtitle="تم التوحيد والدمج بدقة" icon={Users} color="blue" />
-                          <Card title="تنبيهات محاسبية" value={anomaliesCount} subtitle="تتطلب المراجعة" icon={AlertTriangle} color={anomaliesCount > 0 ? "red" : "emerald"} />
+                      <div className="flex items-center flex-wrap justify-start xl:justify-end gap-3 w-full xl:w-auto">
+                        {/* Month Filter */}
+                        <div className={`flex items-center bg-white rounded-lg px-3 py-2 border shadow-sm transition-colors ${currentFilters.month ? (appMode==='expenses'?'border-indigo-400':'border-emerald-400') : 'border-slate-300'}`}>
+                           <CalendarIcon className={`w-4 h-4 ml-2 ${appMode==='expenses'?'text-indigo-500':'text-emerald-500'}`} />
+                           <input 
+                             type="month" 
+                             value={currentFilters.month} 
+                             onChange={e => updateFilters({ month: e.target.value, start: '', end: '' })} 
+                             className="bg-transparent outline-none cursor-pointer text-sm text-slate-700 font-bold" 
+                             title="تصفية بشهر محدد"
+                           />
                         </div>
 
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center"><FileText className="w-5 h-5 ml-2 text-indigo-500"/> دقة الاستدلال الذكي للأعمدة</h3>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">الجهة/المورد:</span> <strong className="text-slate-800">{data.schema?.Supplier_Name || 'تم الاستنتاج'}</strong></div>
-                            <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">البيان/الوصف:</span> <strong className="text-slate-800">{data.schema?.Item_Description || 'غير متوفر'}</strong></div>
-                            <div className="p-3 bg-indigo-50/50 rounded border border-indigo-100"><span className="text-indigo-600 block mb-1">الرقم الضريبي:</span> <strong className="text-slate-800">{data.schema?.Supplier_TaxID || 'لا يوجد'}</strong></div>
-                            <div className="p-3 bg-blue-50/50 rounded border border-blue-100"><span className="text-blue-500 block mb-1">المبلغ الخاضع:</span> <strong className="text-slate-800">{data.schema?.Taxable_Amount || 'استنتاج آلي'}</strong></div>
-                            <div className="p-3 bg-emerald-50/50 rounded border border-emerald-100"><span className="text-emerald-600 block mb-1">عمود بدون ضريبة:</span> <strong className="text-slate-800">{data.schema?.NonTaxable_Amount || 'استنتاج آلي'}</strong></div>
-                            <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">عمود الضريبة:</span> <strong className="text-slate-800">{data.schema?.VAT_Amount || 'لا يوجد'}</strong></div>
-                            <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">عمود الإجمالي:</span> <strong className="text-slate-800">{data.schema?.Total_Amount || 'لا يوجد'}</strong></div>
-                            <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">رقم المستند:</span> <strong className="text-slate-800">{data.schema?.Invoice_Number || 'لا يوجد'}</strong></div>
-                          </div>
+                        {/* Date Range Filter */}
+                        <div className={`flex items-center bg-white rounded-lg px-3 py-2 border shadow-sm transition-colors ${(currentFilters.start || currentFilters.end) ? (appMode==='expenses'?'border-indigo-400':'border-emerald-400') : 'border-slate-300'}`} title="تصفية بفترة مخصصة">
+                           <div className="flex items-center space-x-1 space-x-reverse text-sm text-slate-700 font-medium">
+                               <input type="date" value={currentFilters.start || ''} onChange={e=>updateFilters({ start: e.target.value, month: '' })} className="bg-transparent outline-none cursor-pointer" />
+                               <span className="text-slate-300 mx-1">|</span>
+                               <input type="date" value={currentFilters.end || ''} onChange={e=>updateFilters({ end: e.target.value, month: '' })} className="bg-transparent outline-none cursor-pointer" />
+                           </div>
                         </div>
-                      </div>
-                    )}
 
-                    {/* GROUPED PURCHASES TAB */}
-                    {activeTab === 'grouped_purchases' && (
-                      <div className="space-y-4">
-                        <div className="bg-blue-50 text-blue-800 px-5 py-3 rounded-xl border border-blue-100 text-sm flex items-center mb-6">
-                          <Activity className="w-5 h-5 ml-2 shrink-0"/>
-                          <span>تعديل يدوي متوفر: يمكنك الآن الضغط على أيقونة التعديل بجوار التصنيف الفرعي لتغيير توجيه الفواتير المندرجة تحته بشكل يدوي وبكل سهولة.</span>
+                        {/* Search Bar */}
+                        <div className="relative">
+                          <Search className="w-5 h-5 text-slate-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
+                          <input 
+                            type="text" 
+                            placeholder="بحث شامل..." 
+                            value={currentFilters.search}
+                            onChange={(e) => updateFilters({ search: e.target.value })}
+                            className="pr-10 pl-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 xl:w-56 bg-white shadow-sm"
+                          />
                         </div>
                         
-                        {filteredSuppliers.length === 0 ? (
-                          <div className="bg-white rounded-xl p-12 text-center text-slate-500 border border-slate-200">لا توجد نتائج تطابق بحثك.</div>
-                        ) : (
-                          filteredSuppliers.map(sup => {
-                            const supplierInvoices = data.records.filter(r => r.Supplier_ID === sup.id);
-                            const isExpanded = expandedSuppliers[sup.id];
-                            
-                            return (
-                              <div key={sup.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-200 mb-4">
-                                {/* رأس المورد الرئيسي */}
-                                <div 
-                                  className="bg-slate-800 text-white p-4 flex flex-col md:flex-row md:items-center justify-between cursor-pointer hover:bg-slate-700 transition-colors"
-                                  onClick={() => toggleSupplier(sup.id)}
-                                >
-                                  <div className="flex items-center space-x-4 space-x-reverse mb-3 md:mb-0 w-full md:w-auto">
-                                    <div className="bg-indigo-500/20 p-2 rounded-lg shrink-0">
-                                      {isExpanded ? <ChevronUp className="w-5 h-5 text-indigo-300" /> : <ChevronDown className="w-5 h-5 text-indigo-300" />}
+                        {/* Export Dropdown Button */}
+                        <div className="relative">
+                          <button 
+                            onClick={() => setExportMenuOpen(!exportMenuOpen)}
+                            className={`flex items-center px-4 py-2 text-white rounded-lg font-bold shadow-md transition-colors text-sm ${appMode === 'expenses' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                          >
+                            <Download className="w-4 h-4 ml-2" /> تصدير
+                          </button>
+                          
+                          {exportMenuOpen && (
+                            <div className="absolute left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50">
+                              <button onClick={exportToExcel} className="w-full text-right px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 border-b border-slate-100 flex items-center">
+                                 <FileSpreadsheet className="w-4 h-4 ml-2 text-emerald-600" /> استخراج Excel
+                              </button>
+                              <button onClick={exportToPDF} className="w-full text-right px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-red-600 flex items-center">
+                                 <FileText className="w-4 h-4 ml-2 text-red-500" /> تقرير PDF مطبوع
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </header>
+
+                    <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                      {/* DASHBOARD TAB */}
+                      {activeTab === 'dashboard' && (
+                        <div className="space-y-6 animate-in fade-in duration-300">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <Card title="الإجمالي الكلي (حسب التصفية)" value={formatCurrency(totalSpend)} icon={TrendingUp} color={appMode==='expenses'?'indigo':'emerald'} />
+                            <Card title="الأساس الخاضع للضريبة" value={formatCurrency(totalTaxable)} icon={Layers} color="blue" />
+                            <Card title="مبالغ غير خاضعة/معفاة" value={formatCurrency(totalNonTaxable)} icon={FileText} color="emerald" />
+                            <Card title="إجمالي الضريبة المستخرجة" value={formatCurrency(totalVAT)} icon={Activity} color="indigo" />
+                            <Card title={`إجمالي ${entsLabel} (المطابق)`} value={filteredEntities.length} subtitle="بعد التوحيد والدمج" icon={Users} color="blue" />
+                            <Card title="تنبيهات محاسبية" value={anomaliesCount} subtitle="تتطلب المراجعة" icon={AlertTriangle} color={anomaliesCount > 0 ? "red" : "emerald"} />
+                          </div>
+
+                          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center"><FileText className={`w-5 h-5 ml-2 ${appMode==='expenses'?'text-indigo-500':'text-emerald-500'}`}/> دقة الاستدلال الذكي للأعمدة</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                              <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">{entLabel}:</span> <strong className="text-slate-800">{currentData.schema?.Entity_Name || 'تم الاستنتاج'}</strong></div>
+                              <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">البيان/الوصف:</span> <strong className="text-slate-800">{currentData.schema?.Item_Description || 'غير متوفر'}</strong></div>
+                              <div className="p-3 bg-indigo-50/50 rounded border border-indigo-100"><span className="text-indigo-600 block mb-1">الرقم الضريبي:</span> <strong className="text-slate-800">{currentData.schema?.Entity_TaxID || 'لا يوجد'}</strong></div>
+                              <div className="p-3 bg-blue-50/50 rounded border border-blue-100"><span className="text-blue-500 block mb-1">المبلغ الخاضع:</span> <strong className="text-slate-800">{currentData.schema?.Taxable_Amount || 'استنتاج آلي'}</strong></div>
+                              <div className="p-3 bg-emerald-50/50 rounded border border-emerald-100"><span className="text-emerald-600 block mb-1">عمود بدون ضريبة:</span> <strong className="text-slate-800">{currentData.schema?.NonTaxable_Amount || 'استنتاج آلي'}</strong></div>
+                              <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">عمود الضريبة:</span> <strong className="text-slate-800">{currentData.schema?.VAT_Amount || 'لا يوجد'}</strong></div>
+                              <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">عمود الإجمالي:</span> <strong className="text-slate-800">{currentData.schema?.Total_Amount || 'لا يوجد'}</strong></div>
+                              <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">رقم المستند:</span> <strong className="text-slate-800">{currentData.schema?.Invoice_Number || 'لا يوجد'}</strong></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* CATEGORIES SUMMARY TAB */}
+                      {activeTab === 'categories_summary' && (
+                        <div className="space-y-4 animate-in fade-in duration-300">
+                          <div className={`bg-${appMode==='expenses'?'indigo':'emerald'}-50 text-${appMode==='expenses'?'indigo':'emerald'}-900 px-5 py-4 rounded-xl border border-${appMode==='expenses'?'indigo':'emerald'}-200 text-sm font-bold flex items-center mb-6 shadow-sm`}>
+                            <Activity className="w-5 h-5 ml-3 shrink-0"/>
+                            <span>ميزان المراجعة التحليلي: يُظهر إجمالي العمليات موزعة على التصنيفات المحاسبية (حساب رئيسي) ويندرج تحتها الجهات (حسابات فرعية). انقر للتوسيع والطي.</span>
+                          </div>
+
+                          {categoriesArray.length === 0 ? (
+                            <div className="bg-white rounded-xl p-16 text-center text-slate-400 border border-slate-200">لا توجد بيانات متاحة للتصنيفات بهذه الفلاتر.</div>
+                          ) : (
+                            categoriesArray.map((cat, idx) => {
+                              const isExpanded = expandedCategories[cat.name];
+                              const isEditingGlobalCat = editSubCat.oldCat === cat.name && editSubCat.entId === 'GLOBAL';
+
+                              return (
+                                <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-200 mb-5">
+                                  <div 
+                                    className={`p-5 flex flex-col lg:flex-row lg:items-center justify-between cursor-pointer transition-colors ${appMode==='expenses'?'bg-slate-800 hover:bg-slate-700':'bg-emerald-900 hover:bg-emerald-800'}`}
+                                    onClick={() => toggleCategoryView(cat.name)}
+                                  >
+                                    <div className="flex items-center space-x-4 space-x-reverse mb-4 lg:mb-0 w-full lg:w-auto">
+                                      <div className="bg-white/10 p-2 rounded-lg shrink-0 transition-transform">
+                                        {isExpanded ? <ChevronUp className="w-5 h-5 text-white" /> : <ChevronDown className="w-5 h-5 text-white" />}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3">
+                                            {isEditingGlobalCat ? (
+                                                <div className="flex items-center space-x-2 space-x-reverse" onClick={e => e.stopPropagation()}>
+                                                    <input 
+                                                      list="acc-categories"
+                                                      className="text-sm text-slate-800 px-3 py-1.5 rounded border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-64 shadow-inner"
+                                                      value={editSubCat.value}
+                                                      onChange={e => setEditSubCat({...editSubCat, value: e.target.value})}
+                                                      autoFocus
+                                                    />
+                                                    <button onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if(editSubCat.value && editSubCat.value !== cat.name) {
+                                                            handleSaveGlobalCategory(cat.name, editSubCat.value);
+                                                        }
+                                                        setEditSubCat({entId: null, oldCat: '', value: ''});
+                                                    }} className="bg-emerald-500 text-white px-4 py-1.5 rounded text-sm font-bold shadow-md">حفظ</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); setEditSubCat({entId: null, oldCat: '', value: ''}); }} className="bg-white/20 text-white px-4 py-1.5 rounded text-sm font-bold hover:bg-white/30">إلغاء</button>
+                                                </div>
+                                            ) : (
+                                                <Fragment>
+                                                    <h3 className="font-bold text-xl text-white tracking-wide">{cat.name}</h3>
+                                                    <button 
+                                                       onClick={(e) => { e.stopPropagation(); setEditSubCat({ entId: 'GLOBAL', oldCat: cat.name, value: cat.name }); }}
+                                                       className="text-white/50 hover:text-white bg-white/10 hover:bg-white/20 p-1.5 rounded-md transition-colors"
+                                                       title="إعادة توجيه جميع فواتير هذا التصنيف"
+                                                    >
+                                                       <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                </Fragment>
+                                            )}
+                                        </div>
+                                        <div className="text-white/80 text-sm mt-2 flex items-center flex-wrap gap-2">
+                                          <span className="bg-white/10 px-3 py-1 rounded-md font-bold">{cat.invoiceCount} عملية مستخرجة</span>
+                                        </div>
+                                      </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                      <h3 className="font-bold text-lg">{sup.name}</h3>
-                                      <div className="text-indigo-200 text-xs mt-1.5 flex items-center flex-wrap gap-2">
-                                        <span className="shrink-0">معرف: {sup.id}</span>
-                                        {sup.taxId && <span className="border-r border-indigo-400/30 pr-2 shrink-0">ضريبي: {sup.taxId}</span>}
-                                        
-                                        {/* عرض التوجيهات المحاسبية المتعددة للمورد */}
-                                        <span className="border-r border-indigo-400/30 pr-2 flex items-center flex-wrap gap-1">
-                                          <Tag className="w-3 h-3 ml-1 text-indigo-300 shrink-0" />
-                                          {sup.categoriesArray.map((cat, idx) => (
-                                            <span key={idx} className="bg-indigo-500/40 text-white px-2 py-0.5 rounded-md text-[10px] font-bold border border-indigo-400/50 inline-block mb-1">
-                                              {cat}
+                                    <div className="flex flex-wrap gap-3 text-sm justify-center lg:justify-end shrink-0">
+                                      <div className="bg-white/10 rounded-lg px-4 py-2 border border-white/5 text-center min-w-[120px]"><span className="block text-white/60 text-xs mb-1">الخاضع</span><strong className="font-bold text-white text-base">{formatCurrency(cat.totalTaxable)}</strong></div>
+                                      <div className="bg-white/10 rounded-lg px-4 py-2 border border-white/5 text-center min-w-[120px]"><span className="block text-white/60 text-xs mb-1">غير خاضع</span><strong className="font-bold text-white text-base">{formatCurrency(cat.totalNonTaxable)}</strong></div>
+                                      <div className="bg-white/10 rounded-lg px-4 py-2 border border-white/5 text-center min-w-[120px]"><span className="block text-white/60 text-xs mb-1">الضريبة</span><strong className="font-bold text-white text-base">{formatCurrency(cat.totalVAT)}</strong></div>
+                                      <div className="bg-white/20 rounded-lg px-4 py-2 border border-white/20 text-center min-w-[140px] shadow-inner"><span className="block text-white/80 text-xs mb-1">الإجمالي</span><strong className="font-black text-green-400 text-base">{formatCurrency(cat.totalSpend)}</strong></div>
+                                    </div>
+                                  </div>
+
+                                  {isExpanded && (() => {
+                                      const groupedByEntity = cat.invoices.reduce((acc, inv) => {
+                                          if (!acc[inv.Entity_ID]) {
+                                              acc[inv.Entity_ID] = {
+                                                  id: inv.Entity_ID,
+                                                  name: inv.Entity_Normalized_Name,
+                                                  taxId: inv.Entity_TaxID,
+                                                  invoices: [],
+                                                  totalTaxable: 0,
+                                                  totalNonTaxable: 0,
+                                                  totalVAT: 0,
+                                                  totalSpend: 0
+                                              };
+                                          }
+                                          acc[inv.Entity_ID].invoices.push(inv);
+                                          acc[inv.Entity_ID].totalTaxable += inv.Taxable_Amount;
+                                          acc[inv.Entity_ID].totalNonTaxable += inv.NonTaxable_Amount;
+                                          acc[inv.Entity_ID].totalVAT += inv.VAT_Amount;
+                                          acc[inv.Entity_ID].totalSpend += inv.Total_Amount;
+                                          return acc;
+                                      }, {});
+
+                                      const entitiesList = Object.values(groupedByEntity).sort((a,b) => b.totalSpend - a.totalSpend);
+
+                                      return (
+                                          <div className="bg-slate-50 p-4 border-t border-slate-200">
+                                              {entitiesList.map((ent, eIdx) => {
+                                                  const subKey = `cat-${cat.name}-ent-${ent.id}`;
+                                                  const isSubExpanded = !!expandedSubCats[subKey]; 
+
+                                                  return (
+                                                      <div key={eIdx} className="mb-4 last:mb-0 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                                          <div 
+                                                              className="px-5 py-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100"
+                                                              onClick={() => toggleSubCat(subKey)}
+                                                          >
+                                                              <div className="flex items-center gap-3">
+                                                                  <div className="bg-slate-100 text-slate-500 p-1.5 rounded-lg transition-transform">
+                                                                      {isSubExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                                                  </div>
+                                                                  <h4 className="font-bold text-slate-700 text-sm">{ent.name} <span className="text-slate-400 font-medium text-xs ml-1">(حساب فرعي / {entLabel})</span></h4>
+                                                              </div>
+                                                              <div className="hidden xl:flex items-center gap-4 mr-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-sm">
+                                                                  <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
+                                                                      <span className="text-slate-500 text-xs font-bold mb-0.5">العمليات</span>
+                                                                      <span className="font-black text-slate-800 text-base">{ent.invoices.length}</span>
+                                                                  </div>
+                                                                  <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
+                                                                      <span className="text-slate-500 text-xs font-bold mb-0.5">الخاضع</span>
+                                                                      <span className="font-black text-blue-600 text-base" dir="ltr">{formatCurrency(ent.totalTaxable)}</span>
+                                                                  </div>
+                                                                  <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
+                                                                      <span className="text-slate-500 text-xs font-bold mb-0.5">غير خاضع</span>
+                                                                      <span className="font-black text-emerald-600 text-base" dir="ltr">{formatCurrency(ent.totalNonTaxable)}</span>
+                                                                  </div>
+                                                                  <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
+                                                                      <span className="text-slate-500 text-xs font-bold mb-0.5">الضريبة</span>
+                                                                      <span className="font-black text-slate-600 text-base" dir="ltr">{formatCurrency(ent.totalVAT)}</span>
+                                                                  </div>
+                                                                  <div className="flex flex-col items-center px-3">
+                                                                      <span className="text-indigo-600 text-xs font-black mb-0.5">الإجمالي</span>
+                                                                      <span className="font-black text-indigo-700 text-lg" dir="ltr">{formatCurrency(ent.totalSpend)}</span>
+                                                                  </div>
+                                                              </div>
+                                                              <div className="xl:hidden flex items-center gap-2 text-xs font-bold mr-2">
+                                                                  <span className="text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">{ent.invoices.length} فواتير</span>
+                                                                  <span className="text-white bg-indigo-600 px-3 py-1.5 rounded-lg shadow-sm">{formatCurrency(ent.totalSpend)}</span>
+                                                              </div>
+                                                          </div>
+
+                                                          {isSubExpanded && (
+                                                              <div className="overflow-x-auto">
+                                                                  <table className="w-full text-right text-sm">
+                                                                      <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-200">
+                                                                          <tr>
+                                                                              <th className="px-5 py-3 w-12 text-center">#</th>
+                                                                              <th className="px-5 py-3">رقم المستند</th>
+                                                                              <th className="px-5 py-3">البيان / الوصف</th>
+                                                                              <th className="px-5 py-3">التاريخ</th>
+                                                                              <th className="px-5 py-3 text-left">الخاضع</th>
+                                                                              <th className="px-5 py-3 text-left">بدون ضريبة</th>
+                                                                              <th className="px-5 py-3 text-left">الضريبة</th>
+                                                                              <th className="px-5 py-3 text-left">الإجمالي</th>
+                                                                          </tr>
+                                                                      </thead>
+                                                                      <tbody className="divide-y divide-slate-100">
+                                                                          {ent.invoices.map((inv, idx) => (
+                                                                              <tr key={idx} className={`hover:bg-slate-50 transition-colors ${inv.Anomalies.length > 0 ? 'bg-red-50/40' : ''}`}>
+                                                                                  <td className="px-5 py-3 text-center text-slate-400 text-xs font-bold">{idx + 1}</td>
+                                                                                  <td className="px-5 py-3 font-bold text-slate-800">{inv.Invoice_Number}</td>
+                                                                                  <td className="px-5 py-3 text-slate-600 max-w-[250px] truncate" title={inv.Item_Description}>{inv.Item_Description || '-'}</td>
+                                                                                  <td className="px-5 py-3 text-slate-500 text-xs font-medium">{inv.Invoice_Date}</td>
+                                                                                  <td className="px-5 py-3 text-left text-blue-600 font-bold" dir="ltr">{inv.Taxable_Amount > 0 ? formatCurrency(inv.Taxable_Amount) : '-'}</td>
+                                                                                  <td className="px-5 py-3 text-left text-emerald-600 font-medium" dir="ltr">{inv.NonTaxable_Amount > 0 ? formatCurrency(inv.NonTaxable_Amount) : '-'}</td>
+                                                                                  <td className="px-5 py-3 text-left text-slate-600" dir="ltr">{inv.VAT_Amount > 0 ? formatCurrency(inv.VAT_Amount) : '-'}</td>
+                                                                                  <td className="px-5 py-3 text-left font-bold text-slate-900" dir="ltr">{formatCurrency(inv.Total_Amount)}</td>
+                                                                              </tr>
+                                                                          ))}
+                                                                      </tbody>
+                                                                  </table>
+                                                              </div>
+                                                          )}
+                                                              </div>
+                                                          );
+                                                      })}
+                                                  </div>
+                                      );
+                                  })()}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+
+                      {/* GROUPED ENTITIES TAB (Target Design from Screenshot) */}
+                      {activeTab === 'grouped_purchases' && (
+                        <div className="space-y-4 animate-in fade-in duration-300">
+                          <div className={`bg-${appMode==='expenses'?'indigo':'emerald'}-50 text-${appMode==='expenses'?'indigo':'emerald'}-900 px-5 py-4 rounded-xl border border-${appMode==='expenses'?'indigo':'emerald'}-200 text-sm font-bold flex items-center mb-6 shadow-sm`}>
+                            <Activity className="w-5 h-5 ml-3 shrink-0"/>
+                            <span>هيكل الحسابات المزدوج: يعرض "الحساب الرئيسي" (الجهة/المورد/العميل) ويندرج تحته "الحسابات الفرعية" (التوجيه المحاسبي للعمليات). انقر للتعديل.</span>
+                          </div>
+                          
+                          {filteredEntities.length === 0 ? (
+                            <div className="bg-white rounded-xl p-16 text-center text-slate-400 border border-slate-200">لا توجد نتائج تطابق بحثك بهذه الفلاتر.</div>
+                          ) : (
+                            filteredEntities.map(sup => {
+                              const supplierInvoices = filteredRecords.filter(r => r.Entity_ID === sup.id);
+                              const isExpanded = expandedEntities[sup.id];
+                              
+                              return (
+                                <div key={sup.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-200 mb-5">
+                                  
+                                  {/* --- MAIN HEADER (MATCHING THE SCREENSHOT) --- */}
+                                  <div 
+                                    className="bg-[#1e293b] text-white p-5 flex flex-col xl:flex-row xl:items-center justify-between cursor-pointer"
+                                    onClick={() => toggleEntity(sup.id)}
+                                  >
+                                    <div className="flex items-center justify-between xl:justify-start w-full xl:w-auto">
+                                      <div className="flex items-center gap-4">
+                                        <div className="bg-white/10 hover:bg-white/20 transition-colors p-2 rounded-lg shrink-0">
+                                          {isExpanded ? <ChevronUp className="w-6 h-6 text-indigo-300" /> : <ChevronDown className="w-6 h-6 text-indigo-300" />}
+                                        </div>
+                                        <div className="flex-1">
+                                          <h3 className="font-bold text-xl">{sup.name} <span className="text-sm font-normal text-slate-400 ml-2">(حساب رئيسي)</span></h3>
+                                          <div className="flex items-center flex-wrap gap-3 text-xs text-slate-400 mt-2">
+                                            <span>معرف: {sup.id}</span>
+                                            {sup.taxId && <span>ضريبي: <span className="font-bold text-slate-300">{sup.taxId}</span></span>}
+                                            <div className="flex items-center gap-2 border-r border-slate-600 pr-3">
+                                              <Tag className="w-3 h-3 text-indigo-400" />
+                                              {sup.categoriesArray.map((cat, idx) => (
+                                                <span key={idx} className="bg-[#312e81] text-indigo-200 border border-indigo-500/30 px-3 py-1 rounded-full text-[11px] font-medium">
+                                                  {cat}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Stats Grid matching screenshot */}
+                                    <div className="flex items-center justify-between xl:justify-end gap-6 mt-5 xl:mt-0 xl:pr-6 xl:border-r border-slate-700 w-full xl:w-auto overflow-x-auto pb-2 xl:pb-0">
+                                      <div className="flex flex-col items-center">
+                                          <span className="text-slate-400 text-[11px] font-bold mb-1">العمليات</span>
+                                          <strong className="text-white text-lg font-bold">{sup.invoiceCount}</strong>
+                                      </div>
+                                      <div className="flex flex-col items-center">
+                                          <span className="text-slate-400 text-[11px] font-bold mb-1">الخاضع للضريبة</span>
+                                          <strong className="text-blue-400 text-lg font-bold" dir="ltr">{formatCurrency(sup.totalTaxableNet)}</strong>
+                                      </div>
+                                      <div className="flex flex-col items-center">
+                                          <span className="text-slate-400 text-[11px] font-bold mb-1">غير خاضع</span>
+                                          <strong className="text-emerald-400 text-lg font-bold" dir="ltr">{formatCurrency(sup.totalNonTaxableNet)}</strong>
+                                      </div>
+                                      <div className="flex flex-col items-center">
+                                          <span className="text-slate-400 text-[11px] font-bold mb-1">الضريبة</span>
+                                          <strong className="text-slate-200 text-lg font-bold" dir="ltr">{formatCurrency(sup.totalVAT)}</strong>
+                                      </div>
+                                      <div className="flex flex-col items-center border-r border-slate-600 pr-6 ml-2">
+                                          <span className="text-slate-400 text-[11px] font-bold mb-1">إجمالي المستحق</span>
+                                          <strong className="text-emerald-400 text-lg font-black tracking-wide" dir="ltr">{formatCurrency(sup.totalSpend)}</strong>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* --- SUB-CATEGORIES SECTION --- */}
+                                  {isExpanded && (() => {
+                                    const groupedByCategory = supplierInvoices.reduce((acc, inv) => {
+                                        const cat = inv.Category || 'غير مصنف';
+                                        if (!acc[cat]) acc[cat] = [];
+                                        acc[cat].push(inv);
+                                        return acc;
+                                    }, {});
+
+                                    return (
+                                      <div className="bg-white p-4">
+                                          {Object.entries(groupedByCategory).map(([categoryName, invoices], cIdx) => {
+                                              const subCatKey = `${sup.id}-${categoryName}`;
+                                              const isSubExpanded = !!expandedSubCats[subCatKey]; 
+
+                                              const catTaxable = invoices.reduce((sum, inv) => sum + inv.Taxable_Amount, 0);
+                                              const catNonTaxable = invoices.reduce((sum, inv) => sum + inv.NonTaxable_Amount, 0);
+                                              const catVAT = invoices.reduce((sum, inv) => sum + inv.VAT_Amount, 0);
+                                              const catTotal = invoices.reduce((sum, inv) => sum + inv.Total_Amount, 0);
+
+                                              return (
+                                                  <div key={cIdx} className="mb-6 last:mb-0 border border-slate-200 rounded-xl overflow-hidden">
+                                                      
+                                                      {/* Sub-Category Title Bar */}
+                                                      <div 
+                                                          className="bg-slate-50 border-b border-slate-200 px-5 py-3 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors"
+                                                          onClick={() => toggleSubCat(subCatKey)}
+                                                      >
+                                                          <div className="flex items-center gap-3">
+                                                              <div className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg transition-transform">
+                                                                  {isSubExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                                              </div>
+                                                              <h4 className="font-bold text-indigo-800 text-sm">{categoryName} <span className="text-slate-500 font-medium text-xs ml-1">(حساب فرعي)</span></h4>
+                                                              
+                                                              <button 
+                                                                 onClick={(e) => { e.stopPropagation(); setEditSubCat({ entId: sup.id, oldCat: categoryName, value: categoryName }); }}
+                                                                 className="text-slate-400 hover:text-indigo-600 bg-white hover:bg-slate-100 p-1.5 rounded-md transition-colors border border-slate-200 mr-2 shadow-sm"
+                                                                 title="تعديل التوجيه"
+                                                              >
+                                                                 <Edit2 className="w-3.5 h-3.5" />
+                                                              </button>
+
+                                                              {editSubCat.entId === sup.id && editSubCat.oldCat === categoryName && (
+                                                                  <div className="flex items-center space-x-2 space-x-reverse mr-3" onClick={e => e.stopPropagation()}>
+                                                                     <input 
+                                                                       list="acc-categories"
+                                                                       className="text-sm text-slate-800 px-3 py-1.5 rounded-lg border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64 shadow-inner"
+                                                                       value={editSubCat.value}
+                                                                       onChange={e => setEditSubCat({...editSubCat, value: e.target.value})}
+                                                                       autoFocus
+                                                                     />
+                                                                     <button onClick={(e) => handleSaveSubCategory(e, sup.id, categoryName)} className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-sm">حفظ</button>
+                                                                     <button onClick={(e) => { e.stopPropagation(); setEditSubCat({entId: null, oldCat: '', value: ''}); }} className="bg-slate-500 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-slate-600 shadow-sm">إلغاء</button>
+                                                                  </div>
+                                                              )}
+                                                          </div>
+                                                          <div className="hidden xl:flex items-center gap-4 mr-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-sm">
+                                                              <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
+                                                                  <span className="text-slate-500 text-xs font-bold mb-0.5">العمليات</span>
+                                                                  <span className="font-black text-slate-800 text-base">{invoices.length}</span>
+                                                              </div>
+                                                              <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
+                                                                  <span className="text-slate-500 text-xs font-bold mb-0.5">الخاضع</span>
+                                                                  <span className="font-black text-blue-600 text-base" dir="ltr">{formatCurrency(catTaxable)}</span>
+                                                              </div>
+                                                              <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
+                                                                  <span className="text-slate-500 text-xs font-bold mb-0.5">غير خاضع</span>
+                                                                  <span className="font-black text-emerald-600 text-base" dir="ltr">{formatCurrency(catNonTaxable)}</span>
+                                                              </div>
+                                                              <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
+                                                                  <span className="text-slate-500 text-xs font-bold mb-0.5">الضريبة</span>
+                                                                  <span className="font-black text-slate-600 text-base" dir="ltr">{formatCurrency(catVAT)}</span>
+                                                              </div>
+                                                              <div className="flex flex-col items-center px-3">
+                                                                  <span className="text-indigo-600 text-xs font-black mb-0.5">الإجمالي</span>
+                                                                  <span className="font-black text-indigo-700 text-lg" dir="ltr">{formatCurrency(catTotal)}</span>
+                                                              </div>
+                                                          </div>
+                                                          <div className="xl:hidden flex items-center gap-2 text-xs font-bold mr-2">
+                                                              <span className="text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">{invoices.length} فواتير</span>
+                                                              <span className="text-white bg-indigo-600 px-3 py-1.5 rounded-lg shadow-sm">{formatCurrency(catTotal)}</span>
+                                                          </div>
+                                                      </div>
+                                                      
+                                                      {isSubExpanded && (
+                                                        <Fragment>
+                                                          {/* Table (Matching Screenshot) */}
+                                                          <div className="overflow-x-auto bg-white p-4 pt-2">
+                                                              <table className="w-full text-right text-sm">
+                                                                <thead className="text-slate-400 text-xs border-b border-slate-200">
+                                                                  <tr>
+                                                                    <th className="py-3 font-medium text-center w-12">#</th>
+                                                                    <th className="py-3 font-medium">رقم المستند</th>
+                                                                    <th className="py-3 font-medium">البيان / الوصف</th>
+                                                                    <th className="py-3 font-medium">التاريخ</th>
+                                                                    <th className="py-3 font-medium text-left">المبلغ الخاضع</th>
+                                                                    <th className="py-3 font-medium text-left">بدون ضريبة</th>
+                                                                    <th className="py-3 font-medium text-left">قيمة الضريبة</th>
+                                                                    <th className="py-3 font-medium text-left">إجمالي الفاتورة</th>
+                                                                  </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                  {invoices.map((inv, idx) => (
+                                                                    <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                                                      <td className="py-3 text-center text-slate-400">{idx + 1}</td>
+                                                                      <td className="py-3 font-medium text-slate-700">{inv.Invoice_Number}</td>
+                                                                      <td className="py-3 text-slate-800">
+                                                                        <div className="font-medium max-w-[250px] truncate" title={inv.Item_Description}>{inv.Item_Description || '-'}</div>
+                                                                      </td>
+                                                                      <td className="py-3 text-slate-500 text-xs">{inv.Invoice_Date}</td>
+                                                                      <td className="py-3 text-left text-blue-600 font-medium" dir="ltr">{inv.Taxable_Amount > 0 ? formatCurrency(inv.Taxable_Amount) : '-'}</td>
+                                                                      <td className="py-3 text-left text-emerald-600 font-medium" dir="ltr">{inv.NonTaxable_Amount > 0 ? formatCurrency(inv.NonTaxable_Amount) : '-'}</td>
+                                                                      <td className="py-3 text-left text-slate-500 font-medium" dir="ltr">{inv.VAT_Amount > 0 ? formatCurrency(inv.VAT_Amount) : '-'}</td>
+                                                                      <td className="py-3 text-left font-bold text-slate-900" dir="ltr">{formatCurrency(inv.Total_Amount)}</td>
+                                                                    </tr>
+                                                                  ))}
+                                                                </tbody>
+                                                              </table>
+                                                          </div>
+                                                        </Fragment>
+                                                      )}
+                                                  </div>
+                                              );
+                                          })}
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+
+                      {/* AUDIT / RAW DATA TAB */}
+                      {activeTab === 'audit' && (
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-300">
+                          <div className="bg-red-50 p-6 border-b border-red-100 flex items-start space-x-4 space-x-reverse">
+                            <ShieldAlert className="w-8 h-8 text-red-600 shrink-0" />
+                            <div>
+                              <h4 className="text-red-800 font-black text-xl mb-1">سجل التناقضات والأخطاء المحاسبية</h4>
+                              <p className="text-red-700/80 text-sm font-bold">يتم عرض السجلات التي تحتوي على أخطاء في الجمع (الخاضع + غير الخاضع + الضريبة لا يساوي الإجمالي) أو الفواتير المكررة لنفس الـ{entLabel}.</p>
+                            </div>
+                          </div>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-right text-sm">
+                              <thead className="bg-slate-50 text-slate-600 text-xs font-black uppercase border-b border-slate-200">
+                                <tr>
+                                  <th className="px-6 py-4">رقم الفاتورة</th>
+                                  <th className="px-6 py-4">{entLabel} / الجهة</th>
+                                  <th className="px-6 py-4 text-left">الأساس الضريبي</th>
+                                  <th className="px-6 py-4 text-left">الضريبة</th>
+                                  <th className="px-6 py-4 text-left text-slate-800">الإجمالي (بالملف)</th>
+                                  <th className="px-6 py-4">نوع الخطأ / الملاحظة</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {filteredRecords.filter(r => r.Anomalies.length > 0).map((row, idx) => (
+                                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-6 py-4 font-bold text-slate-800">{row.Invoice_Number}</td>
+                                    <td className="px-6 py-4">
+                                      <div className="font-bold text-slate-800">{row.Entity_Normalized_Name}</div>
+                                      {row.Entity_TaxID && <div className="text-[11px] font-bold text-slate-500 mt-1">ضريبي: {row.Entity_TaxID}</div>}
+                                    </td>
+                                    <td className="px-6 py-4 text-left font-medium">{formatCurrency(row.Net_Amount)}</td>
+                                    <td className="px-6 py-4 text-left text-red-600 font-bold">{formatCurrency(row.VAT_Amount)}</td>
+                                    <td className="px-6 py-4 text-left font-black text-slate-900">{formatCurrency(row.Total_Amount)}</td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col space-y-2">
+                                          {row.Anomalies.map((anom, i) => (
+                                            <span key={i} className="inline-flex items-center text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg shadow-sm">
+                                              <AlertTriangle className="w-4 h-4 ml-2" /> {anom}
                                             </span>
                                           ))}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-wrap gap-2 md:gap-4 text-sm bg-slate-900/50 p-2.5 rounded-lg justify-center mt-3 md:mt-0 shrink-0">
-                                    <div className="text-center px-2"><span className="block text-slate-400 text-xs mb-1">العمليات</span><strong className="font-bold">{sup.invoiceCount}</strong></div>
-                                    <div className="text-center px-2 border-r border-slate-700"><span className="block text-blue-300 text-xs mb-1">الخاضع للضريبة</span><strong className="font-bold text-white">{formatCurrency(sup.totalTaxableNet)}</strong></div>
-                                    <div className="text-center px-2 border-r border-slate-700"><span className="block text-emerald-300 text-xs mb-1">غير خاضع</span><strong className="font-bold text-white">{formatCurrency(sup.totalNonTaxableNet)}</strong></div>
-                                    <div className="text-center px-2 border-r border-slate-700"><span className="block text-slate-400 text-xs mb-1">الضريبة</span><strong className="font-bold">{formatCurrency(sup.totalVAT)}</strong></div>
-                                    <div className="text-center px-2 border-r border-slate-700"><span className="block text-slate-400 text-xs mb-1">إجمالي المستحق</span><strong className="font-bold text-emerald-400">{formatCurrency(sup.totalSpend)}</strong></div>
-                                  </div>
-                                </div>
-
-                                {/* الجداول الفرعية (تظهر عند فتح المورد) */}
-                                {isExpanded && (() => {
-                                  // تجميع الفواتير حسب التصنيف الفرعي
-                                  const groupedByCategory = supplierInvoices.reduce((acc, inv) => {
-                                      const cat = inv.Category || 'غير مصنف';
-                                      if (!acc[cat]) acc[cat] = [];
-                                      acc[cat].push(inv);
-                                      return acc;
-                                  }, {});
-
-                                  return (
-                                    <div className="bg-slate-50/80 p-4 border-t border-slate-200">
-                                        {Object.entries(groupedByCategory).map(([categoryName, invoices], cIdx) => {
-                                            const subCatKey = `${sup.id}-${categoryName}`;
-                                            const isSubExpanded = !collapsedSubCats[subCatKey];
-
-                                            const catTaxable = invoices.reduce((sum, inv) => sum + inv.Taxable_Amount, 0);
-                                            const catNonTaxable = invoices.reduce((sum, inv) => sum + inv.NonTaxable_Amount, 0);
-                                            const catVAT = invoices.reduce((sum, inv) => sum + inv.VAT_Amount, 0);
-                                            const catTotal = invoices.reduce((sum, inv) => sum + inv.Total_Amount, 0);
-
-                                            return (
-                                                <div key={cIdx} className="mb-6 last:mb-0 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                                                    
-                                                    {/* رأس التصنيف الفرعي (Sub-Category Header) */}
-                                                    <div 
-                                                        className="bg-indigo-50/60 px-5 py-4 border-b border-indigo-100 flex flex-col gap-3 cursor-pointer hover:bg-indigo-100/60 transition-colors"
-                                                        onClick={() => toggleSubCat(subCatKey)}
-                                                    >
-                                                        <div className="flex justify-between items-center flex-wrap gap-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="text-indigo-400 shrink-0">
-                                                                    {isSubExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                                                                </div>
-                                                                <div className="bg-indigo-500 rounded p-1.5 ml-1 shrink-0 shadow-sm">
-                                                                    <Layers className="w-4 h-4 text-white" />
-                                                                </div>
-                                                                
-                                                                {/* منطق التعديل اليدوي للتصنيف الفرعي */}
-                                                                {editSubCat.supId === sup.id && editSubCat.oldCat === categoryName ? (
-                                                                    <div className="flex items-center space-x-2 space-x-reverse" onClick={e => e.stopPropagation()}>
-                                                                       <input 
-                                                                         list="acc-categories"
-                                                                         className="text-xs text-slate-800 px-2 py-1.5 rounded border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-56 font-medium shadow-inner"
-                                                                         value={editSubCat.value}
-                                                                         onChange={e => setEditSubCat({...editSubCat, value: e.target.value})}
-                                                                         autoFocus
-                                                                       />
-                                                                       <button onClick={(e) => handleSaveSubCategory(e, sup.id, categoryName)} className="bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-emerald-600 transition-colors shadow-sm">حفظ</button>
-                                                                       <button onClick={(e) => { e.stopPropagation(); setEditSubCat({supId: null, oldCat: '', value: ''}); }} className="bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-slate-600 transition-colors shadow-sm">إلغاء</button>
-                                                                    </div>
-                                                                ) : (
-                                                                    <Fragment>
-                                                                        <h4 className="font-bold text-indigo-900 text-sm">{categoryName}</h4>
-                                                                        <button 
-                                                                           onClick={(e) => {
-                                                                              e.stopPropagation();
-                                                                              setEditSubCat({ supId: sup.id, oldCat: categoryName, value: categoryName });
-                                                                           }}
-                                                                           className="text-indigo-400 hover:text-indigo-700 bg-white hover:bg-indigo-100 p-1.5 rounded-md transition-colors border border-transparent hover:border-indigo-200 shadow-sm"
-                                                                           title="تعديل هذا التصنيف الفرعي (إعادة توجيه)"
-                                                                        >
-                                                                           <Edit2 className="w-3.5 h-3.5" />
-                                                                        </button>
-                                                                    </Fragment>
-                                                                )}
-                                                            </div>
-                                                            <span className="bg-white text-indigo-600 px-3 py-1 rounded-full text-xs font-bold border border-indigo-200 shadow-sm">
-                                                                {invoices.length} فواتير
-                                                            </span>
-                                                        </div>
-                                                        
-                                                        {/* كروت المجاميع الأنيقة (Beautiful Totals Badges) */}
-                                                        <div className="flex flex-wrap gap-2 w-full border-t border-indigo-100/70 pt-3 mt-1">
-                                                            <div className="bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 flex items-center justify-between min-w-[130px] flex-1 shadow-sm">
-                                                                <span className="text-blue-800 text-[11px] font-bold">الخاضع للضريبة</span>
-                                                                <strong className="text-blue-700 text-sm font-black">{formatCurrency(catTaxable)}</strong>
-                                                            </div>
-                                                            <div className="bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200 flex items-center justify-between min-w-[130px] flex-1 shadow-sm">
-                                                                <span className="text-emerald-800 text-[11px] font-bold">غير خاضع</span>
-                                                                <strong className="text-emerald-700 text-sm font-black">{formatCurrency(catNonTaxable)}</strong>
-                                                            </div>
-                                                            <div className="bg-slate-100 px-3 py-2 rounded-lg border border-slate-300 flex items-center justify-between min-w-[130px] flex-1 shadow-sm">
-                                                                <span className="text-slate-600 text-[11px] font-bold">الضريبة</span>
-                                                                <strong className="text-slate-800 text-sm font-black">{formatCurrency(catVAT)}</strong>
-                                                            </div>
-                                                            <div className="bg-indigo-600 text-white px-3 py-2 rounded-lg flex items-center justify-between min-w-[150px] flex-1 shadow-md">
-                                                                <span className="text-indigo-100 text-[12px] font-bold">الإجمالي</span>
-                                                                <strong className="text-white text-sm font-black tracking-wide">{formatCurrency(catTotal)}</strong>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* جدول الفواتير التابعة للتصنيف الفرعي */}
-                                                    {isSubExpanded && (
-                                                      <div className="overflow-x-auto">
-                                                          <table className="w-full text-right text-sm">
-                                                            <thead className="bg-white text-slate-400 text-[11px] font-bold uppercase border-b border-slate-100">
-                                                              <tr>
-                                                                <th className="px-5 py-3 w-12 text-center">#</th>
-                                                                <th className="px-5 py-3">رقم المستند</th>
-                                                                <th className="px-5 py-3">البيان / الوصف</th>
-                                                                <th className="px-5 py-3">التاريخ</th>
-                                                                <th className="px-5 py-3 text-left">المبلغ الخاضع</th>
-                                                                <th className="px-5 py-3 text-left">بدون ضريبة</th>
-                                                                <th className="px-5 py-3 text-left">قيمة الضريبة</th>
-                                                                <th className="px-5 py-3 text-left text-slate-700">إجمالي الفاتورة</th>
-                                                              </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-slate-50 bg-white">
-                                                              {invoices.map((inv, idx) => (
-                                                                <tr key={idx} className={`hover:bg-slate-50/80 transition-colors ${inv.Anomalies.length > 0 ? 'bg-red-50/40' : ''}`}>
-                                                                  <td className="px-5 py-3 text-center text-slate-400 text-xs">{idx + 1}</td>
-                                                                  <td className="px-5 py-3 font-medium text-slate-800">{inv.Invoice_Number}</td>
-                                                                  <td className="px-5 py-3 text-slate-600 max-w-[250px]">
-                                                                    <div className="truncate font-medium text-slate-700" title={inv.Item_Description}>{inv.Item_Description || '-'}</div>
-                                                                  </td>
-                                                                  <td className="px-5 py-3 text-slate-600 text-xs">{inv.Invoice_Date}</td>
-                                                                  <td className="px-5 py-3 text-left text-blue-600 font-medium">{inv.Taxable_Amount > 0 ? formatCurrency(inv.Taxable_Amount) : '-'}</td>
-                                                                  <td className="px-5 py-3 text-left text-emerald-600 font-medium">{inv.NonTaxable_Amount > 0 ? formatCurrency(inv.NonTaxable_Amount) : '-'}</td>
-                                                                  <td className="px-5 py-3 text-left text-slate-500">{inv.VAT_Amount > 0 ? formatCurrency(inv.VAT_Amount) : '-'}</td>
-                                                                  <td className="px-5 py-3 text-left font-bold text-slate-800">{formatCurrency(inv.Total_Amount)}</td>
-                                                                </tr>
-                                                              ))}
-                                                            </tbody>
-                                                          </table>
-                                                      </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    )}
-
-                    {/* AUDIT / RAW DATA TAB */}
-                    {activeTab === 'audit' && (
-                      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="bg-red-50 p-5 border-b border-red-100 flex items-start space-x-3 space-x-reverse">
-                          <ShieldAlert className="w-6 h-6 text-red-600 mt-0.5" />
-                          <div>
-                            <h4 className="text-red-800 font-bold text-lg">سجل التناقضات والأخطاء المحاسبية</h4>
-                            <p className="text-red-600 text-sm mt-1">يتم عرض السجلات التي تحتوي على أخطاء في الجمع (الخاضع + غير الخاضع + الضريبة لا يساوي الإجمالي) أو الفواتير المكررة لنفس المورد.</p>
+                                        </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                                {filteredRecords.filter(r => r.Anomalies.length > 0).length === 0 && (
+                                  <tr>
+                                    <td colSpan="6" className="px-6 py-20 text-center text-slate-400">
+                                      <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4 opacity-50"/>
+                                      <p className="text-xl font-bold">ممتاز! لا يوجد أي أخطاء أو تناقضات في العمليات المالية المفلترة.</p>
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
                           </div>
                         </div>
-
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-right text-sm">
-                            <thead className="bg-slate-50 text-slate-800 font-semibold border-b border-slate-200">
-                              <tr>
-                                <th className="px-6 py-4">رقم الفاتورة</th>
-                                <th className="px-6 py-4">المورد / الجهة</th>
-                                <th className="px-6 py-4 text-left">الأساس الضريبي</th>
-                                <th className="px-6 py-4 text-left">الضريبة</th>
-                                <th className="px-6 py-4 text-left">الإجمالي (بالملف)</th>
-                                <th className="px-6 py-4">نوع الخطأ / الملاحظة</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {filteredRecords.map((row, idx) => (
-                                <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                  <td className="px-6 py-4 font-medium text-slate-800">{row.Invoice_Number}</td>
-                                  <td className="px-6 py-4">
-                                    <div className="font-medium text-slate-800">{row.Supplier_Normalized_Name}</div>
-                                    {row.Supplier_TaxID && <div className="text-xs text-slate-500 mt-0.5">ضريبي: {row.Supplier_TaxID}</div>}
-                                  </td>
-                                  <td className="px-6 py-4 text-left">{formatCurrency(row.Net_Amount)}</td>
-                                  <td className="px-6 py-4 text-left text-red-600 font-medium">{formatCurrency(row.VAT_Amount)}</td>
-                                  <td className="px-6 py-4 text-left font-bold">{formatCurrency(row.Total_Amount)}</td>
-                                  <td className="px-6 py-4">
-                                    {row.Anomalies.length > 0 ? (
-                                      <div className="flex flex-col space-y-2">
-                                        {row.Anomalies.map((anom, i) => (
-                                          <span key={i} className="inline-flex items-center text-xs font-bold text-red-700 bg-red-100 px-2 py-1.5 rounded-md">
-                                            <AlertTriangle className="w-3.5 h-3.5 ml-1.5" /> {anom}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <span className="text-slate-400">-</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                              {filteredRecords.length === 0 && (
-                                <tr>
-                                  <td colSpan="6" className="px-6 py-16 text-center text-slate-500">
-                                    <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-50"/>
-                                    <p className="text-lg">ممتاز! لا يوجد أي أخطاء أو تناقضات في العمليات المالية المكتشفة.</p>
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </main>
-              </div>
+                      )}
+                    </div>
+                  </Fragment>
+                )}
+              </main>
             </div>
           );
         }
