@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ذكاء البيانات المالية</title>
+    <title>ذكاء البيانات المالية - نسخة المطاعم والحلويات</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -54,6 +54,8 @@
         const ChevronDown = (p) => <Icon {...p}><polyline points="6 9 12 15 18 9"/></Icon>;
         const ChevronUp = (p) => <Icon {...p}><polyline points="18 15 12 9 6 15"/></Icon>;
         const AlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
+        const Tag = (p) => <Icon {...p}><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></Icon>;
+        const Edit2 = (p) => <Icon {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></Icon>;
 
         // --- UTILITY & MATH FUNCTIONS ---
         const levenshtein = (a, b) => {
@@ -71,8 +73,8 @@
 
         const isSimilarName = (a, b) => {
           if (!a || !b) return false;
-          const cleanA = String(a).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
-          const cleanB = String(b).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
+          const cleanA = String(a).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز|معرض)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
+          const cleanB = String(b).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز|معرض)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
           if (cleanA === cleanB) return true;
           if (Math.abs(cleanA.length - cleanB.length) > 3) return false; 
           const distance = levenshtein(cleanA, cleanB);
@@ -104,22 +106,161 @@
           return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR' }).format(val);
         };
 
+        // --- EXPERT ACCOUNTING TAXONOMY ENGINE (SOCPA / IFRS for F&B) ---
+        const getCategory = (supplierName, descriptionText = "") => {
+          const nameText = String(supplierName).toLowerCase();
+          const descText = String(descriptionText).toLowerCase();
+          const allText = nameText + " " + descText;
+          
+          let scores = {};
+          const addScore = (cat, points) => { scores[cat] = (scores[cat] || 0) + points; };
+
+          if (/(لابتوب|حاسب|كمبيوتر|ماك بوك|أجهزة حاسب|سيرفر|ثلاجة عرض|فرن كبير|معدات رأسمالية|laptop|macbook)/.test(allText) && !/(صيانة|تصليح|قطع غيار)/.test(allText)) {
+              addScore('أصول ثابتة - أجهزة حاسب آلي ومعدات', 100);
+          }
+
+          if (/(صيانة|تصليح|اصلاح|إصلاح|قطع غيار)/.test(allText)) {
+              if (/(سيار|مركب|دينا|شاحن|اطار|إطار|كفر)/.test(allText)) addScore('صيانة سيارات ومعدات نقل', 100);
+              else if (/(مبن|سباك|كهربائي|باب|جدار|أرضي|دهان|ترميم)/.test(allText)) addScore('صيانة وتشغيل مباني ومرافق', 100);
+              else if (/(ايفون|جوال|ايباد|شاشة|حاسب|لابتوب|سوفتوير)/.test(allText)) addScore('صيانة أجهزة إلكترونية وتقنية', 100);
+              else addScore('صيانة آلات ومعدات التشغيل', 90); 
+          }
+
+          if (/(ش[كو]+لات|كاكاو|رائب|بيض|دواجن|لحم|دجاج|سمك|فاكه|فواك|برتقال|كرز|ليمون|يانسون|ألبان|البان|قهوة|بن |يمني|مشروب|غازي|مياه|ماء|ثلج|زبدة|قشط|كريم|خفق|حليب|أجبان|جبن|سكر|طحين|دقيق|مكسرات|فستق|لوز|فانيليا|خميرة|عصير|عسل|مربى|تمور|بهار|خضار|خضروات|تموين|غذائي|ألوان|الوان|بودرة)/.test(allText)) {
+              addScore('تكلفة مبيعات - مواد غذائية (خامات ومكونات)', 100);
+          }
+
+          if (/(رول|كيك سميك|قاعد|قواعد|أكياس|كيس|شفاف|قالب|قوالب|شريط|ستان|مصاص|تغليف|علب|كرتون|بوكس|ورق زبدة|قصدير|تيك اوي)/.test(allText) && !/(نظافة|نفاية)/.test(allText)) {
+              addScore('تكلفة مبيعات - مواد تعبئة وتغليف ومستلزمات تقديم', 100);
+          }
+
+          if (/(شمع|شموع|زينة|ديكور|مجسم|توبر|شجرة|ecualyptus|اكولبتبيس|زهور|ورد|لافندر)/.test(allText)) {
+              addScore('مستلزمات حفلات وزينة وديكور', 90);
+          }
+
+          if (/(صيني|صواني|أدوات.*مطبخ|أدوات.*طعام|أدوات.*كيك|صحون|ملاعق|شوك|سكاكين|قدور|طناجر|أكواب زجاج|عجان|ثلاجة)/.test(allText) && !/(صيانة|تصليح)/.test(allText)) {
+              addScore('أدوات ومهمات طعام ومطبخ (تشغيلية)', 85);
+          }
+
+          if (/(إزالة.*مواد|ترسب|جلاية|معقم|مسح|ممسح|ارضيات|نظافة|تنظيف|قفاز|صابون|ديتول|مبيض|منظف|مكنس|مكانيس|أكياس نفاية|كلوركس|صوف القطن|قطن)/.test(allText)) {
+              addScore('مواد وأدوات تنظيف متنوعة', 100);
+          }
+
+          if (/(octane|اوكتان|بنزين|ديزل|وقود|محطة|محروقات|غاز|اسطوانة|تعبئة)/.test(allText)) {
+              addScore('مواد بترولية، محروقات وغاز', 100);
+          }
+
+          if (/(إستشارات|استشارات|خدمات شهرية|أتعاب|محاماة|مراجعة|تدقيق|محاسب)/.test(allText) && !/(تقني|برنامج)/.test(allText)) {
+              addScore('إستشارات وأتعاب مهنية', 110);
+          }
+          
+          if (/(منصة النمو|fidas|فيداس)/.test(allText)) {
+              if (/(استشار|خدمات شهرية)/.test(descText)) addScore('إستشارات وأتعاب مهنية', 120);
+              if (/(اشتراك|تجديد|منصة|برنامج)/.test(descText)) addScore('اشتراكات تقنية وبرمجيات (IT & SaaS)', 120);
+          }
+
+          if (/(اشتراك شهري|كانفا|canva|سحابة|برنامج|تطبيق|نظام|سوفتوير|كلاود|استضافة|دومين|سيرفر|saas|odoo|erp|اشتراك تقني|تجديد اشتراك)/.test(allText) && !/(تأمين|انترنت|اتصالات|استشارات)/.test(allText)) {
+              addScore('اشتراكات تقنية وبرمجيات (IT & SaaS)', 90);
+          }
+
+          if (/(ايجار|إيجار|عقار|سكن|محل)/.test(allText) && !/(سيارة|مركبة|دينا|نقل)/.test(allText)) {
+              addScore('مصروفات إيجارات وعقارات', 100);
+          }
+
+          if (/(تأمين طبي|بوبا|التعاونية|تأمين صحي|ميدغلف|تكافل)/.test(allText)) {
+              addScore('مصروفات تأمين طبي للموظفين', 100);
+          }
+          if (/(دواء|صيدلية|مستشفى|علاج|مستلزمات طبية)/.test(allText) && !/(تأمين)/.test(allText)) {
+              addScore('مصروفات رعاية طبية وأدوية', 100);
+          }
+
+          if (/(تأمينات اجتماعية|gosi)/.test(allText)) {
+              addScore('مصروفات التأمينات الاجتماعية (GOSI)', 120);
+          }
+
+          if (/(شركة الكهرباء|فاتورة كهرباء|السعودية للكهرباء|كهرباء)/.test(allText) && !/(سباك|صيانة)/.test(allText)) {
+              addScore('مصروفات كهرباء', 110); 
+          }
+          if (/(مياه وطنية|شركة المياه|فاتورة مياه)/.test(allText) && !/(شرب|نوفا|صفا)/.test(allText)) {
+              addScore('مصروفات مياه', 110);
+          }
+          if (/(اتصالات|stc|موبايلي|زين|انترنت|فاتورة جوال)/.test(allText)) {
+              addScore('مصروفات اتصالات وانترنت', 110);
+          }
+
+          if (/(حملات|اعلانية|إعلانية|تسويق|سناب|انستقرام|تيك توك|جوجل ادز|ترويج|اعلانات|دعاية|لوحات)/.test(allText)) {
+              addScore('تسويق وحملات إعلانية', 100);
+          }
+
+          if (/(ملابس|قبعات تخرج|طاقية|خياط|يونيفورم|مريلة|تفصيل زي|زي موظفين|زي عمال)/.test(allText)) {
+              addScore('زي عاملين ومهمات عمل', 100);
+          }
+
+          if (/(تجديد كارت|رخصة|نقاط مدد|مدد|قوى|مقيم|جوازات|تأشيرة|رسوم حكومية|غرفة تجارية|سجل تجاري|بلدية|زكاة|ضريبة)/.test(allText) && !/(تأمينات اجتماعية|gosi|قيمة مضافة|vat)/.test(allText)) {
+              addScore('رسوم ومدفوعات حكومية', 100);
+          }
+
+          if (/(مطبوعات|ورق|أقلام|اقلام|حبر|قرطاسية|مكتبية|أدوات مكتبية|أختام|دفاتر)/.test(allText)) {
+              addScore('أدوات ومهمات مكتبية (قرطاسية ومطبوعات)', 100);
+          }
+
+          if (/(صدقة|صدقات|تبرع|جمعية|أوقاف|أيتام|إغاثة|إحسان)/.test(allText)) {
+              addScore('تبرعات ومساهمات مجتمعية', 100);
+          }
+
+          if (/(تدريب|دورة|معهد|ورشة عمل|تطوير موظفين|training)/.test(allText)) {
+              addScore('تدريب وتطوير كوادر', 100);
+          }
+          if (/(أبحاث|بحث وتطوير|r&d|research & development|development)/.test(allText) && !/(عقار|مباني)/.test(allText)) {
+              addScore('مصروفات وأبحاث وتطوير (R&D)', 100);
+          }
+
+          if (/(بنك|مصرف|رسوم تحويل|عمولة|مدى|فيزا|ماستركارد)/.test(allText)) {
+              addScore('رسوم بنكية وخدمات مالية', 100);
+          }
+          if (/(شحن|توصيل|لوجستي|ارامكس|سمسا|جاهز|هنقرستيشن|مرسول|دينا|ونش|سطحة)/.test(allText) || (/(تأجير|ايجار)/.test(allText) && /(دينا|شاحنة|سيارة)/.test(allText))) {
+              addScore('نقل وخدمات لوجستية وتوصيل', 100);
+          }
+
+          if (/(بطارية)/.test(allText) && !/(جوال|سيارة|مركبة)/.test(allText)) {
+              addScore('أدوات ومهمات استهلاكية متنوعة', 50);
+          }
+
+          let bestCategory = 'تجارة وتوريدات متنوعة عامة';
+          let max = 0;
+          for (const [cat, score] of Object.entries(scores)) {
+              if (score > max) {
+                  max = score;
+                  bestCategory = cat;
+              }
+          }
+
+          if (max === 0 && /(تجارة|توريد|شركة|مؤسسة)/.test(nameText)) {
+              return 'تجارة وتوريدات متنوعة عامة';
+          } else if (max === 0) {
+              return 'مصروفات تشغيلية متنوعة';
+          }
+
+          return bestCategory;
+        };
+
         // --- SMART HEURISTIC DATA PROFILING ---
         const detectSchema = (keys, sampleData) => {
           const schema = {
             Supplier_Name: null, Supplier_TaxID: null, Invoice_Number: null, Invoice_Date: null, 
             Net_Amount: null, Taxable_Amount: null, NonTaxable_Amount: null, 
-            VAT_Amount: null, Total_Amount: null
+            VAT_Amount: null, Total_Amount: null, Item_Description: null
           };
 
           const scores = {};
           keys.forEach(k => {
-            scores[k] = { supplier: 0, taxId: 0, invNum: 0, date: 0, total: 0, net: 0, vat: 0, taxable: 0, nonTaxable: 0 };
+            scores[k] = { supplier: 0, taxId: 0, invNum: 0, date: 0, total: 0, net: 0, vat: 0, taxable: 0, nonTaxable: 0, desc: 0 };
           });
           
           keys.forEach(k => {
             const lower = String(k).toLowerCase().trim();
-            if (/(مورد|اسم|شركة|جهة|حساب|دائن|vendor|supplier|merchant|بيان|تفاصيل|وصف|description|الاسم)/i.test(lower) && !/(رقم|id|no)/i.test(lower)) scores[k].supplier += 50;
+            if (/(مورد|اسم|شركة|جهة|حساب|دائن|vendor|supplier|merchant)/i.test(lower) && !/(رقم|id|no)/i.test(lower)) scores[k].supplier += 50;
+            if (/(بيان|تفاصيل|وصف|صنف|مادة|نوع|description|item|البيان)/i.test(lower) && !/(مورد|اسم|جهة|حساب|رقم|تاريخ|مبلغ)/i.test(lower)) scores[k].desc += 50;
             if (/(رقم.*ضريب|ضريب.*رقم|تسجيل.*ضريب|تعريفي|tax id|vat id|vat no|tin|vat number|vat reg)/i.test(lower)) scores[k].taxId += 50;
             if (/(فاتورة|مستند|مرجع|قيد|invoice|inv|ref)/i.test(lower) && !/(تاريخ|date|اجمالي|قيمة|مبلغ)/i.test(lower)) scores[k].invNum += 50;
             if (/(تاريخ|وقت|date|time)/i.test(lower)) scores[k].date += 50;
@@ -127,7 +268,7 @@
             if (/(بدون ضريبة|غير خاضع|معفى|صفرية|non-taxable|exempt)/i.test(lower)) scores[k].nonTaxable += 50;
             if (/(خاضع|taxable)/i.test(lower) && !/(غير|بدون|non|exempt)/i.test(lower)) scores[k].taxable += 50;
             if (/(ضريبة|tax|vat)/i.test(lower) && !/(رقم|نسبة|id|tax id|vat id|بدون|خاضع|غير|معفى)/i.test(lower)) scores[k].vat += 50;
-            if (/(صافي|net|sub|basic|مبلغ|قيمة|amount)/i.test(lower) && !/(اجمالي|إجمالي|مجموع|ضريبة|tax|vat|total|gross|خاضع|بدون)/i.test(lower)) scores[k].net += 30;
+            if (/(صافي|net|sub|basic|مبلغ|قيمة|amount)/i.test(lower) && !/(اجمالي|إجمالي|مجموع|ضريبة|tax|vat|total|gross|خاضع|بدون|بيان)/i.test(lower)) scores[k].net += 30;
           });
 
           sampleData.slice(0, 20).forEach(row => {
@@ -153,7 +294,7 @@
             });
             if (bestKey) {
               schema[schemaKey] = bestKey;
-              scores[bestKey] = { supplier: 0, taxId: 0, invNum: 0, date: 0, total: 0, net: 0, vat: 0, taxable: 0, nonTaxable: 0 };
+              scores[bestKey] = { supplier: 0, taxId: 0, invNum: 0, date: 0, total: 0, net: 0, vat: 0, taxable: 0, nonTaxable: 0, desc: 0 };
             }
           };
 
@@ -164,8 +305,13 @@
           assignBest('Total_Amount', 'total', 20);
           assignBest('Net_Amount', 'net', 20);
           assignBest('Invoice_Date', 'date', 15);
-          assignBest('Supplier_Name', 'supplier', 15);
+          assignBest('Item_Description', 'desc', 20); 
+          assignBest('Supplier_Name', 'supplier', 15); 
           assignBest('Invoice_Number', 'invNum', 20);
+
+          if (!schema.Supplier_Name && schema.Item_Description) {
+             schema.Supplier_Name = schema.Item_Description;
+          }
 
           return schema;
         };
@@ -179,6 +325,7 @@
           let cleanData = rawData.map((row, index) => {
             const rawSup = schema.Supplier_Name ? row[schema.Supplier_Name] : null;
             const rawTaxId = schema.Supplier_TaxID ? String(row[schema.Supplier_TaxID] || '').replace(/\.\d+$/, '').trim() : '';
+            const rawDesc = schema.Item_Description ? row[schema.Item_Description] : '';
             
             let total = schema.Total_Amount ? parseNumber(row[schema.Total_Amount]) : 0;
             let vat = schema.VAT_Amount ? parseNumber(row[schema.VAT_Amount]) : 0;
@@ -217,6 +364,8 @@
               Supplier_TaxID: rawTaxId,
               Invoice_Number: (schema.Invoice_Number && row[schema.Invoice_Number]) ? String(row[schema.Invoice_Number]).trim() : 'بدون رقم',
               Invoice_Date: schema.Invoice_Date ? parseDate(row[schema.Invoice_Date]) : 'غير محدد',
+              Item_Description: rawDesc ? String(rawDesc).trim() : '', 
+              Category: null, 
               Net_Amount: net,
               Taxable_Amount: taxable,
               NonTaxable_Amount: nonTaxable,
@@ -249,6 +398,7 @@
             const mapping = supplierMapping[row.Raw_Supplier];
             row.Supplier_ID = mapping.id;
             row.Supplier_Normalized_Name = mapping.name;
+            row.Category = getCategory(mapping.name, row.Item_Description);
           });
 
           const invoiceRegistry = new Set();
@@ -274,6 +424,7 @@
                 id: row.Supplier_ID,
                 name: row.Supplier_Normalized_Name,
                 taxId: row.Supplier_TaxID, 
+                categoriesSet: new Set(), 
                 invoiceCount: 0,
                 totalNet: 0,
                 totalTaxableNet: 0,
@@ -287,6 +438,8 @@
             if (!supplierProfiles[row.Supplier_ID].taxId && row.Supplier_TaxID) {
                supplierProfiles[row.Supplier_ID].taxId = row.Supplier_TaxID;
             }
+            
+            supplierProfiles[row.Supplier_ID].categoriesSet.add(row.Category);
 
             supplierProfiles[row.Supplier_ID].invoiceCount += 1;
             supplierProfiles[row.Supplier_ID].totalNet += row.Net_Amount;
@@ -297,10 +450,17 @@
             if (row.Anomalies.length > 0) supplierProfiles[row.Supplier_ID].anomalies += 1;
           });
 
+          const finalSuppliers = Object.values(supplierProfiles).map(profile => {
+             profile.categoryString = Array.from(profile.categoriesSet).join(" ، ");
+             profile.categoriesArray = Array.from(profile.categoriesSet);
+             delete profile.categoriesSet; 
+             return profile;
+          }).sort((a, b) => b.totalSpend - a.totalSpend);
+
           return {
             schema,
             records: cleanData,
-            suppliers: Object.values(supplierProfiles).sort((a, b) => b.totalSpend - a.totalSpend)
+            suppliers: finalSuppliers
           };
         };
 
@@ -336,6 +496,15 @@
           const [searchTerm, setSearchTerm] = useState('');
           const [expandedSuppliers, setExpandedSuppliers] = useState({});
           const [exportMenuOpen, setExportMenuOpen] = useState(false);
+          
+          // State for Supplier-Level Manual Override Editing (Existing)
+          const [editCatData, setEditCatData] = useState({ supId: null, value: '' });
+
+          // NEW: State for Sub-Category Manual Override Editing
+          const [editSubCat, setEditSubCat] = useState({ supId: null, oldCat: '', value: '' });
+
+          // NEW: State for toggling Sub-Categories
+          const [collapsedSubCats, setCollapsedSubCats] = useState({});
 
           useEffect(() => {
             const checkLibs = setInterval(() => {
@@ -371,7 +540,7 @@
                    let score = 0;
                    row.forEach(cell => {
                      const str = String(cell).toLowerCase();
-                     if (/(مورد|بيان|رقم|تاريخ|مبلغ|اجمالي|صافي|دائن|مدين|ضريبة|خاضع|ضريبي)/.test(str) || /^\d{15}$/.test(str)) score++;
+                     if (/(مورد|بيان|تفاصيل|وصف|صنف|رقم|تاريخ|مبلغ|اجمالي|صافي|دائن|مدين|ضريبة|خاضع|ضريبي)/.test(str) || /^\d{15}$/.test(str)) score++;
                    });
                    if (score > maxScore) {
                      maxScore = score;
@@ -420,6 +589,7 @@
           const reset = () => {
             setData({ records: [], suppliers: [], schema: null });
             setExpandedSuppliers({});
+            setCollapsedSubCats({});
             setStatus('ready');
           };
 
@@ -430,6 +600,76 @@
             }));
           };
 
+          const toggleSubCat = (key) => {
+            setCollapsedSubCats(prev => ({
+              ...prev,
+              [key]: !prev[key]
+            }));
+          };
+
+          // دالة الحفظ للتعديل اليدوي على مستوى المورد (كافة الفواتير)
+          const handleSaveCategory = (e, supId) => {
+            e.stopPropagation();
+            if (!editCatData.value.trim()) return;
+
+            const updatedRecords = data.records.map(r => {
+                if (r.Supplier_ID === supId) {
+                    return { ...r, Category: editCatData.value };
+                }
+                return r;
+            });
+
+            const updatedSuppliers = data.suppliers.map(s => {
+                if (s.id === supId) {
+                    return { 
+                        ...s, 
+                        categoryString: editCatData.value,
+                        categoriesArray: [editCatData.value]
+                    };
+                }
+                return s;
+            });
+
+            setData({ ...data, records: updatedRecords, suppliers: updatedSuppliers });
+            setEditCatData({ supId: null, value: '' });
+          };
+
+          // NEW: دالة الحفظ للتعديل اليدوي للتصنيف الفرعي (فقط فواتير هذا التصنيف داخل المورد)
+          const handleSaveSubCategory = (e, supId, oldCat) => {
+            e.stopPropagation();
+            if (!editSubCat.value.trim() || editSubCat.value === oldCat) {
+                setEditSubCat({ supId: null, oldCat: '', value: '' });
+                return;
+            }
+
+            const newCat = editSubCat.value;
+
+            // تحديث فقط السجلات التي تتبع هذا المورد وهذا التصنيف القديم
+            const updatedRecords = data.records.map(r => {
+                if (r.Supplier_ID === supId && r.Category === oldCat) {
+                    return { ...r, Category: newCat };
+                }
+                return r;
+            });
+
+            // إعادة حساب التصنيفات المدرجة في ملف المورد الرئيسي
+            const updatedSuppliers = data.suppliers.map(s => {
+                if (s.id === supId) {
+                    const supRecords = updatedRecords.filter(r => r.Supplier_ID === supId);
+                    const newCatSet = new Set(supRecords.map(r => r.Category));
+                    return { 
+                        ...s, 
+                        categoryString: Array.from(newCatSet).join(" ، "),
+                        categoriesArray: Array.from(newCatSet)
+                    };
+                }
+                return s;
+            });
+
+            setData({ ...data, records: updatedRecords, suppliers: updatedSuppliers });
+            setEditSubCat({ supId: null, oldCat: '', value: '' });
+          };
+
           // --- EXPORT FUNCTIONS ---
           const exportToExcel = () => {
             setExportMenuOpen(false);
@@ -437,10 +677,10 @@
 
             const wb = window.XLSX.utils.book_new();
 
-            // Sheet 1: الموردين
             const suppliersExport = data.suppliers.map(s => ({
                 "اسم المورد / الجهة": s.name,
                 "الرقم الضريبي": s.taxId || "غير متوفر",
+                "التوجيهات المحاسبية (متعدد)": s.categoryString, 
                 "إجمالي عدد الفواتير": s.invoiceCount,
                 "الأساس الخاضع للضريبة": s.totalTaxableNet,
                 "المبلغ غير الخاضع/المعفى": s.totalNonTaxableNet,
@@ -449,14 +689,15 @@
                 "أخطاء وتناقضات": s.anomalies
             }));
             const ws1 = window.XLSX.utils.json_to_sheet(suppliersExport);
-            window.XLSX.utils.book_append_sheet(wb, ws1, "ملخص الموردين");
+            window.XLSX.utils.book_append_sheet(wb, ws1, "ملخص الموردين والتوجيه");
 
-            // Sheet 2: العمليات التفصيلية
             const recordsExport = data.records.map(r => ({
                 "رقم المستند/الفاتورة": r.Invoice_Number,
                 "تاريخ الفاتورة": r.Invoice_Date,
                 "اسم المورد": r.Supplier_Normalized_Name,
                 "الرقم الضريبي": r.Supplier_TaxID || "غير متوفر",
+                "البيان / الوصف": r.Item_Description || "-", 
+                "التوجيه المحاسبي الدقيق": r.Category, 
                 "المبلغ الخاضع للضريبة": r.Taxable_Amount,
                 "المبلغ غير الخاضع": r.NonTaxable_Amount,
                 "قيمة الضريبة": r.VAT_Amount,
@@ -466,7 +707,7 @@
             const ws2 = window.XLSX.utils.json_to_sheet(recordsExport);
             window.XLSX.utils.book_append_sheet(wb, ws2, "سجل المشتريات التفصيلي");
 
-            window.XLSX.writeFile(wb, "تقرير_التدقيق_المالي.xlsx");
+            window.XLSX.writeFile(wb, "تقرير_التدقيق_المالي_مطاعم.xlsx");
           };
 
           const exportToPDF = () => {
@@ -487,7 +728,7 @@
 
                 const opt = {
                   margin:       0.4,
-                  filename:     'تقرير_التدقيق_المالي.pdf',
+                  filename:     'تقرير_التدقيق_المالي_مطاعم.pdf',
                   image:        { type: 'jpeg', quality: 0.98 },
                   html2canvas:  { scale: 2, useCORS: true },
                   jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
@@ -514,14 +755,17 @@
           const filteredSuppliers = data.suppliers.filter(s => 
             s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (s.taxId && s.taxId.toLowerCase().includes(searchTerm.toLowerCase()))
+            (s.taxId && s.taxId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (s.categoryString && s.categoryString.toLowerCase().includes(searchTerm.toLowerCase()))
           );
 
           const filteredRecords = data.records.filter(r => 
             (auditMode ? r.Anomalies.length > 0 : true) &&
             (r.Supplier_Normalized_Name.toLowerCase().includes(searchTerm.toLowerCase()) || 
              r.Invoice_Number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             (r.Supplier_TaxID && r.Supplier_TaxID.toLowerCase().includes(searchTerm.toLowerCase())))
+             (r.Supplier_TaxID && r.Supplier_TaxID.toLowerCase().includes(searchTerm.toLowerCase())) ||
+             (r.Item_Description && r.Item_Description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+             (r.Category && r.Category.toLowerCase().includes(searchTerm.toLowerCase())))
           );
 
           if (status === 'loading_script') {
@@ -537,7 +781,7 @@
                       <Zap className="w-10 h-10 text-indigo-400" />
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-2">النظام المالي - الذكاء الاصطناعي</h1>
-                    <p className="text-slate-400">استدلال ذكي للأعمدة والبيانات من أي نظام محاسبي</p>
+                    <p className="text-slate-400">توجيه محاسبي آلي وذكي للفواتير (لنشاط المطاعم والحلويات)</p>
                   </div>
                   
                   <div className="p-8">
@@ -550,7 +794,7 @@
                       />
                       <FileSpreadsheet className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-slate-800 mb-1">رفع كشف المشتريات / الفواتير</h3>
-                      <p className="text-sm text-slate-500 mb-4">يقوم النظام بفحص محتوى الخلايا بذكاء للتعرف على الرقم الضريبي والمبالغ حتى لو كانت العناوين غريبة أو مفقودة.</p>
+                      <p className="text-sm text-slate-500 mb-4">يقوم النظام بالتوجيه المحاسبي الدقيق لكل فاتورة على حدة بناءً على وصفها (أصول، تكلفة مبيعات، مصروفات) وفقاً لمعايير SOCPA.</p>
                       <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium pointer-events-none">
                         استعراض الملف
                       </button>
@@ -561,15 +805,49 @@
             );
           }
 
-          // Use a Fragment wrapper to ensure MainUI remains mounted during loading/exporting.
           return (
             <div>
+              {/* قائمة الفئات المقترحة للتعديل اليدوي */}
+              <datalist id="acc-categories">
+                  <option value="أصول ثابتة - أجهزة حاسب آلي ومعدات" />
+                  <option value="تكلفة مبيعات - مواد غذائية (خامات ومكونات)" />
+                  <option value="تكلفة مبيعات - مواد تعبئة وتغليف ومستلزمات تقديم" />
+                  <option value="أدوات ومهمات طعام ومطبخ (تشغيلية)" />
+                  <option value="مواد وأدوات تنظيف متنوعة" />
+                  <option value="صيانة وتشغيل مباني ومرافق" />
+                  <option value="صيانة سيارات ومعدات نقل" />
+                  <option value="صيانة آلات ومعدات التشغيل" />
+                  <option value="صيانة أجهزة إلكترونية وتقنية" />
+                  <option value="مواد بترولية، محروقات وغاز" />
+                  <option value="إستشارات وأتعاب مهنية" />
+                  <option value="اشتراكات تقنية وبرمجيات (IT & SaaS)" />
+                  <option value="تسويق وحملات إعلانية" />
+                  <option value="رسوم ومدفوعات حكومية" />
+                  <option value="مصروفات التأمينات الاجتماعية (GOSI)" />
+                  <option value="مصروفات تأمين طبي للموظفين" />
+                  <option value="مصروفات إيجارات وعقارات" />
+                  <option value="زي عاملين ومهمات عمل" />
+                  <option value="مصروفات كهرباء" />
+                  <option value="مصروفات مياه" />
+                  <option value="مصروفات اتصالات وانترنت" />
+                  <option value="أدوات ومهمات مكتبية (قرطاسية ومطبوعات)" />
+                  <option value="تبرعات ومساهمات مجتمعية" />
+                  <option value="رسوم بنكية وخدمات مالية" />
+                  <option value="مستلزمات حفلات وزينة وديكور" />
+                  <option value="مصروفات رعاية طبية وأدوية" />
+                  <option value="تدريب وتطوير كوادر" />
+                  <option value="مصروفات وأبحاث وتطوير (R&D)" />
+                  <option value="نقل وخدمات لوجستية وتوصيل" />
+                  <option value="تجارة وتوريدات متنوعة عامة" />
+                  <option value="مصروفات تشغيلية متنوعة" />
+              </datalist>
+
               {/* --- FULL SCREEN OVERLAY FOR PROCESSING/EXPORTING --- */}
               {(status === 'processing' || status === 'exporting') && (
                 <div className="h-screen flex flex-col items-center justify-center bg-slate-50/90 backdrop-blur-sm z-50 fixed inset-0">
                   <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-                  <h2 className="text-xl font-semibold text-slate-800">{status === 'exporting' ? 'جاري إعداد وتجهيز ملف PDF...' : 'جاري الاستدلال الذكي للبيانات...'}</h2>
-                  <p className="text-slate-500 mt-2 text-sm text-center">{status === 'exporting' ? 'يرجى الانتظار، يتم الآن رسم الجداول وتنسيقها' : 'يتم الآن فحص محتوى الخلايا للتعرف على نوع الأعمدة وفصل المبالغ.'}</p>
+                  <h2 className="text-xl font-semibold text-slate-800">{status === 'exporting' ? 'جاري إعداد وتجهيز ملف PDF...' : 'جاري التدقيق والتوجيه المحاسبي...'}</h2>
+                  <p className="text-slate-500 mt-2 text-sm text-center">{status === 'exporting' ? 'يرجى الانتظار، يتم الآن رسم الجداول وتنسيقها' : 'يتم تحليل كل فاتورة على حدة وتوجيهها للحساب الصحيح (تكلفة مبيعات، منافع، أصول، إلخ).'}</p>
                 </div>
               )}
 
@@ -581,7 +859,7 @@
                    {/* Header */}
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #1e293b', paddingBottom: '20px', marginBottom: '30px' }}>
                        <div>
-                           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>تقرير ذكاء البيانات المالية</h1>
+                           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>تقرير ذكاء البيانات المالية والتوجيه المحاسبي</h1>
                            <p style={{ color: '#64748b', marginTop: '5px', fontSize: '14px' }}>تاريخ التصدير: {new Date().toLocaleDateString('ar-SA')}</p>
                        </div>
                        <div style={{ display: 'flex', alignItems: 'center', color: '#4f46e5', fontWeight: 'bold', fontSize: '24px' }}>
@@ -611,14 +889,14 @@
 
                    {/* Suppliers Table */}
                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', marginBottom: '15px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px' }}>ملخص حسابات الموردين والأرصدة المستحقة</h2>
-                   <table style={{ width: '100%', textAlign: 'right', fontSize: '13px', borderCollapse: 'collapse', marginBottom: '40px' }}>
+                   <table style={{ width: '100%', textAlign: 'right', fontSize: '12px', borderCollapse: 'collapse', marginBottom: '40px' }}>
                       <thead>
                          <tr style={{ backgroundColor: '#1e293b', color: 'white' }}>
-                             <th style={{ padding: '10px', border: '1px solid #334155' }}>اسم المورد / الجهة</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>الجهة / المورد</th>
+                             <th style={{ padding: '10px', border: '1px solid #334155' }}>التوجيهات المحاسبية (أنشطة المورد)</th>
                              <th style={{ padding: '10px', border: '1px solid #334155' }}>الرقم الضريبي</th>
                              <th style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center' }}>العمليات</th>
                              <th style={{ padding: '10px', border: '1px solid #334155' }}>خاضع للضريبة</th>
-                             <th style={{ padding: '10px', border: '1px solid #334155' }}>غير خاضع</th>
                              <th style={{ padding: '10px', border: '1px solid #334155' }}>الضريبة</th>
                              <th style={{ padding: '10px', border: '1px solid #334155' }}>الإجمالي المستحق</th>
                          </tr>
@@ -627,10 +905,10 @@
                          {data.suppliers.map((s, i) => (
                             <tr key={i} style={{ backgroundColor: i % 2 === 0 ? '#f8fafc' : 'white' }}>
                                <td style={{ padding: '10px', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#0f172a' }}>{s.name}</td>
+                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', color: '#475569', fontSize: '11px', maxWidth: '200px' }}>{s.categoryString}</td>
                                <td style={{ padding: '10px', border: '1px solid #e2e8f0', color: '#475569' }}>{s.taxId || '-'}</td>
                                <td style={{ padding: '10px', border: '1px solid #e2e8f0', textAlign: 'center', color: '#475569' }}>{s.invoiceCount}</td>
                                <td style={{ padding: '10px', border: '1px solid #e2e8f0', color: '#2563eb' }}>{formatCurrency(s.totalTaxableNet)}</td>
-                               <td style={{ padding: '10px', border: '1px solid #e2e8f0', color: '#059669' }}>{formatCurrency(s.totalNonTaxableNet)}</td>
                                <td style={{ padding: '10px', border: '1px solid #e2e8f0', color: '#475569' }}>{formatCurrency(s.totalVAT)}</td>
                                <td style={{ padding: '10px', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#0f172a' }}>{formatCurrency(s.totalSpend)}</td>
                             </tr>
@@ -723,10 +1001,10 @@
                         <Search className="w-5 h-5 text-slate-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
                         <input 
                           type="text" 
-                          placeholder="ابحث عن مورد، فاتورة، رقم ضريبي..." 
+                          placeholder="ابحث عن مورد، بيان، رقم ضريبي، توجيه..." 
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pr-10 pl-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64 bg-slate-50"
+                          className="pr-10 pl-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-72 bg-slate-50"
                         />
                       </div>
                       
@@ -770,8 +1048,9 @@
                           <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center"><FileText className="w-5 h-5 ml-2 text-indigo-500"/> دقة الاستدلال الذكي للأعمدة</h3>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">الجهة/المورد:</span> <strong className="text-slate-800">{data.schema?.Supplier_Name || 'تم الاستنتاج'}</strong></div>
+                            <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">البيان/الوصف:</span> <strong className="text-slate-800">{data.schema?.Item_Description || 'غير متوفر'}</strong></div>
                             <div className="p-3 bg-indigo-50/50 rounded border border-indigo-100"><span className="text-indigo-600 block mb-1">الرقم الضريبي:</span> <strong className="text-slate-800">{data.schema?.Supplier_TaxID || 'لا يوجد'}</strong></div>
-                            <div className="p-3 bg-blue-50/50 rounded border border-blue-100"><span className="text-blue-500 block mb-1">عمود المبلغ الخاضع:</span> <strong className="text-slate-800">{data.schema?.Taxable_Amount || 'استنتاج آلي'}</strong></div>
+                            <div className="p-3 bg-blue-50/50 rounded border border-blue-100"><span className="text-blue-500 block mb-1">المبلغ الخاضع:</span> <strong className="text-slate-800">{data.schema?.Taxable_Amount || 'استنتاج آلي'}</strong></div>
                             <div className="p-3 bg-emerald-50/50 rounded border border-emerald-100"><span className="text-emerald-600 block mb-1">عمود بدون ضريبة:</span> <strong className="text-slate-800">{data.schema?.NonTaxable_Amount || 'استنتاج آلي'}</strong></div>
                             <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">عمود الضريبة:</span> <strong className="text-slate-800">{data.schema?.VAT_Amount || 'لا يوجد'}</strong></div>
                             <div className="p-3 bg-slate-50 rounded border border-slate-100"><span className="text-slate-500 block mb-1">عمود الإجمالي:</span> <strong className="text-slate-800">{data.schema?.Total_Amount || 'لا يوجد'}</strong></div>
@@ -786,7 +1065,7 @@
                       <div className="space-y-4">
                         <div className="bg-blue-50 text-blue-800 px-5 py-3 rounded-xl border border-blue-100 text-sm flex items-center mb-6">
                           <Activity className="w-5 h-5 ml-2 shrink-0"/>
-                          <span>هذه القائمة تفصل المشتريات بدقة، حيث يظهر (الخاضع) و (غير الخاضع) بشكل مستقل. انقر على المورد لعرض الفواتير.</span>
+                          <span>تعديل يدوي متوفر: يمكنك الآن الضغط على أيقونة التعديل بجوار التصنيف الفرعي لتغيير توجيه الفواتير المندرجة تحته بشكل يدوي وبكل سهولة.</span>
                         </div>
                         
                         {filteredSuppliers.length === 0 ? (
@@ -797,24 +1076,35 @@
                             const isExpanded = expandedSuppliers[sup.id];
                             
                             return (
-                              <div key={sup.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-200">
+                              <div key={sup.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-200 mb-4">
+                                {/* رأس المورد الرئيسي */}
                                 <div 
                                   className="bg-slate-800 text-white p-4 flex flex-col md:flex-row md:items-center justify-between cursor-pointer hover:bg-slate-700 transition-colors"
                                   onClick={() => toggleSupplier(sup.id)}
                                 >
-                                  <div className="flex items-center space-x-4 space-x-reverse mb-3 md:mb-0">
-                                    <div className="bg-indigo-500/20 p-2 rounded-lg">
+                                  <div className="flex items-center space-x-4 space-x-reverse mb-3 md:mb-0 w-full md:w-auto">
+                                    <div className="bg-indigo-500/20 p-2 rounded-lg shrink-0">
                                       {isExpanded ? <ChevronUp className="w-5 h-5 text-indigo-300" /> : <ChevronDown className="w-5 h-5 text-indigo-300" />}
                                     </div>
-                                    <div>
+                                    <div className="flex-1 min-w-0">
                                       <h3 className="font-bold text-lg">{sup.name}</h3>
-                                      <div className="text-indigo-200 text-xs mt-0.5">
-                                        معرف الحساب: {sup.id} 
-                                        {sup.taxId && <span className="mr-2 pr-2 border-r border-indigo-400/30">الرقم الضريبي: {sup.taxId}</span>}
+                                      <div className="text-indigo-200 text-xs mt-1.5 flex items-center flex-wrap gap-2">
+                                        <span className="shrink-0">معرف: {sup.id}</span>
+                                        {sup.taxId && <span className="border-r border-indigo-400/30 pr-2 shrink-0">ضريبي: {sup.taxId}</span>}
+                                        
+                                        {/* عرض التوجيهات المحاسبية المتعددة للمورد */}
+                                        <span className="border-r border-indigo-400/30 pr-2 flex items-center flex-wrap gap-1">
+                                          <Tag className="w-3 h-3 ml-1 text-indigo-300 shrink-0" />
+                                          {sup.categoriesArray.map((cat, idx) => (
+                                            <span key={idx} className="bg-indigo-500/40 text-white px-2 py-0.5 rounded-md text-[10px] font-bold border border-indigo-400/50 inline-block mb-1">
+                                              {cat}
+                                            </span>
+                                          ))}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex flex-wrap gap-2 md:gap-4 text-sm bg-slate-900/50 p-2.5 rounded-lg justify-center">
+                                  <div className="flex flex-wrap gap-2 md:gap-4 text-sm bg-slate-900/50 p-2.5 rounded-lg justify-center mt-3 md:mt-0 shrink-0">
                                     <div className="text-center px-2"><span className="block text-slate-400 text-xs mb-1">العمليات</span><strong className="font-bold">{sup.invoiceCount}</strong></div>
                                     <div className="text-center px-2 border-r border-slate-700"><span className="block text-blue-300 text-xs mb-1">الخاضع للضريبة</span><strong className="font-bold text-white">{formatCurrency(sup.totalTaxableNet)}</strong></div>
                                     <div className="text-center px-2 border-r border-slate-700"><span className="block text-emerald-300 text-xs mb-1">غير خاضع</span><strong className="font-bold text-white">{formatCurrency(sup.totalNonTaxableNet)}</strong></div>
@@ -823,36 +1113,140 @@
                                   </div>
                                 </div>
 
-                                {isExpanded && (
-                                  <div className="overflow-x-auto bg-slate-50/50 p-1 border-t border-slate-200">
-                                    <table className="w-full text-right text-sm">
-                                      <thead className="bg-white text-slate-500 text-xs font-bold uppercase border-b border-slate-200">
-                                        <tr>
-                                          <th className="px-5 py-3 w-12 text-center">#</th>
-                                          <th className="px-5 py-3">رقم المستند</th>
-                                          <th className="px-5 py-3">التاريخ</th>
-                                          <th className="px-5 py-3 text-left text-blue-700">المبلغ الخاضع</th>
-                                          <th className="px-5 py-3 text-left text-emerald-700">المبلغ بدون ضريبة</th>
-                                          <th className="px-5 py-3 text-left">قيمة الضريبة</th>
-                                          <th className="px-5 py-3 text-left text-slate-800">إجمالي الفاتورة</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="divide-y divide-slate-100 bg-white">
-                                        {supplierInvoices.map((inv, idx) => (
-                                          <tr key={idx} className={`hover:bg-slate-50 transition-colors ${inv.Anomalies.length > 0 ? 'bg-red-50/40' : ''}`}>
-                                            <td className="px-5 py-3 text-center text-slate-400 text-xs">{idx + 1}</td>
-                                            <td className="px-5 py-3 font-medium text-slate-800">{inv.Invoice_Number}</td>
-                                            <td className="px-5 py-3 text-slate-600">{inv.Invoice_Date}</td>
-                                            <td className="px-5 py-3 text-left text-blue-600 font-medium">{inv.Taxable_Amount > 0 ? formatCurrency(inv.Taxable_Amount) : '-'}</td>
-                                            <td className="px-5 py-3 text-left text-emerald-600 font-medium">{inv.NonTaxable_Amount > 0 ? formatCurrency(inv.NonTaxable_Amount) : '-'}</td>
-                                            <td className="px-5 py-3 text-left text-slate-600">{inv.VAT_Amount > 0 ? formatCurrency(inv.VAT_Amount) : '-'}</td>
-                                            <td className="px-5 py-3 text-left font-bold text-slate-900">{formatCurrency(inv.Total_Amount)}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                )}
+                                {/* الجداول الفرعية (تظهر عند فتح المورد) */}
+                                {isExpanded && (() => {
+                                  // تجميع الفواتير حسب التصنيف الفرعي
+                                  const groupedByCategory = supplierInvoices.reduce((acc, inv) => {
+                                      const cat = inv.Category || 'غير مصنف';
+                                      if (!acc[cat]) acc[cat] = [];
+                                      acc[cat].push(inv);
+                                      return acc;
+                                  }, {});
+
+                                  return (
+                                    <div className="bg-slate-50/80 p-4 border-t border-slate-200">
+                                        {Object.entries(groupedByCategory).map(([categoryName, invoices], cIdx) => {
+                                            const subCatKey = `${sup.id}-${categoryName}`;
+                                            const isSubExpanded = !collapsedSubCats[subCatKey];
+
+                                            const catTaxable = invoices.reduce((sum, inv) => sum + inv.Taxable_Amount, 0);
+                                            const catNonTaxable = invoices.reduce((sum, inv) => sum + inv.NonTaxable_Amount, 0);
+                                            const catVAT = invoices.reduce((sum, inv) => sum + inv.VAT_Amount, 0);
+                                            const catTotal = invoices.reduce((sum, inv) => sum + inv.Total_Amount, 0);
+
+                                            return (
+                                                <div key={cIdx} className="mb-6 last:mb-0 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                                                    
+                                                    {/* رأس التصنيف الفرعي (Sub-Category Header) */}
+                                                    <div 
+                                                        className="bg-indigo-50/60 px-5 py-4 border-b border-indigo-100 flex flex-col gap-3 cursor-pointer hover:bg-indigo-100/60 transition-colors"
+                                                        onClick={() => toggleSubCat(subCatKey)}
+                                                    >
+                                                        <div className="flex justify-between items-center flex-wrap gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="text-indigo-400 shrink-0">
+                                                                    {isSubExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                                                </div>
+                                                                <div className="bg-indigo-500 rounded p-1.5 ml-1 shrink-0 shadow-sm">
+                                                                    <Layers className="w-4 h-4 text-white" />
+                                                                </div>
+                                                                
+                                                                {/* منطق التعديل اليدوي للتصنيف الفرعي */}
+                                                                {editSubCat.supId === sup.id && editSubCat.oldCat === categoryName ? (
+                                                                    <div className="flex items-center space-x-2 space-x-reverse" onClick={e => e.stopPropagation()}>
+                                                                       <input 
+                                                                         list="acc-categories"
+                                                                         className="text-xs text-slate-800 px-2 py-1.5 rounded border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-56 font-medium shadow-inner"
+                                                                         value={editSubCat.value}
+                                                                         onChange={e => setEditSubCat({...editSubCat, value: e.target.value})}
+                                                                         autoFocus
+                                                                       />
+                                                                       <button onClick={(e) => handleSaveSubCategory(e, sup.id, categoryName)} className="bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-emerald-600 transition-colors shadow-sm">حفظ</button>
+                                                                       <button onClick={(e) => { e.stopPropagation(); setEditSubCat({supId: null, oldCat: '', value: ''}); }} className="bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-slate-600 transition-colors shadow-sm">إلغاء</button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <Fragment>
+                                                                        <h4 className="font-bold text-indigo-900 text-sm">{categoryName}</h4>
+                                                                        <button 
+                                                                           onClick={(e) => {
+                                                                              e.stopPropagation();
+                                                                              setEditSubCat({ supId: sup.id, oldCat: categoryName, value: categoryName });
+                                                                           }}
+                                                                           className="text-indigo-400 hover:text-indigo-700 bg-white hover:bg-indigo-100 p-1.5 rounded-md transition-colors border border-transparent hover:border-indigo-200 shadow-sm"
+                                                                           title="تعديل هذا التصنيف الفرعي (إعادة توجيه)"
+                                                                        >
+                                                                           <Edit2 className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    </Fragment>
+                                                                )}
+                                                            </div>
+                                                            <span className="bg-white text-indigo-600 px-3 py-1 rounded-full text-xs font-bold border border-indigo-200 shadow-sm">
+                                                                {invoices.length} فواتير
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        {/* كروت المجاميع الأنيقة (Beautiful Totals Badges) */}
+                                                        <div className="flex flex-wrap gap-2 w-full border-t border-indigo-100/70 pt-3 mt-1">
+                                                            <div className="bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 flex items-center justify-between min-w-[130px] flex-1 shadow-sm">
+                                                                <span className="text-blue-800 text-[11px] font-bold">الخاضع للضريبة</span>
+                                                                <strong className="text-blue-700 text-sm font-black">{formatCurrency(catTaxable)}</strong>
+                                                            </div>
+                                                            <div className="bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200 flex items-center justify-between min-w-[130px] flex-1 shadow-sm">
+                                                                <span className="text-emerald-800 text-[11px] font-bold">غير خاضع</span>
+                                                                <strong className="text-emerald-700 text-sm font-black">{formatCurrency(catNonTaxable)}</strong>
+                                                            </div>
+                                                            <div className="bg-slate-100 px-3 py-2 rounded-lg border border-slate-300 flex items-center justify-between min-w-[130px] flex-1 shadow-sm">
+                                                                <span className="text-slate-600 text-[11px] font-bold">الضريبة</span>
+                                                                <strong className="text-slate-800 text-sm font-black">{formatCurrency(catVAT)}</strong>
+                                                            </div>
+                                                            <div className="bg-indigo-600 text-white px-3 py-2 rounded-lg flex items-center justify-between min-w-[150px] flex-1 shadow-md">
+                                                                <span className="text-indigo-100 text-[12px] font-bold">الإجمالي</span>
+                                                                <strong className="text-white text-sm font-black tracking-wide">{formatCurrency(catTotal)}</strong>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* جدول الفواتير التابعة للتصنيف الفرعي */}
+                                                    {isSubExpanded && (
+                                                      <div className="overflow-x-auto">
+                                                          <table className="w-full text-right text-sm">
+                                                            <thead className="bg-white text-slate-400 text-[11px] font-bold uppercase border-b border-slate-100">
+                                                              <tr>
+                                                                <th className="px-5 py-3 w-12 text-center">#</th>
+                                                                <th className="px-5 py-3">رقم المستند</th>
+                                                                <th className="px-5 py-3">البيان / الوصف</th>
+                                                                <th className="px-5 py-3">التاريخ</th>
+                                                                <th className="px-5 py-3 text-left">المبلغ الخاضع</th>
+                                                                <th className="px-5 py-3 text-left">بدون ضريبة</th>
+                                                                <th className="px-5 py-3 text-left">قيمة الضريبة</th>
+                                                                <th className="px-5 py-3 text-left text-slate-700">إجمالي الفاتورة</th>
+                                                              </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-50 bg-white">
+                                                              {invoices.map((inv, idx) => (
+                                                                <tr key={idx} className={`hover:bg-slate-50/80 transition-colors ${inv.Anomalies.length > 0 ? 'bg-red-50/40' : ''}`}>
+                                                                  <td className="px-5 py-3 text-center text-slate-400 text-xs">{idx + 1}</td>
+                                                                  <td className="px-5 py-3 font-medium text-slate-800">{inv.Invoice_Number}</td>
+                                                                  <td className="px-5 py-3 text-slate-600 max-w-[250px]">
+                                                                    <div className="truncate font-medium text-slate-700" title={inv.Item_Description}>{inv.Item_Description || '-'}</div>
+                                                                  </td>
+                                                                  <td className="px-5 py-3 text-slate-600 text-xs">{inv.Invoice_Date}</td>
+                                                                  <td className="px-5 py-3 text-left text-blue-600 font-medium">{inv.Taxable_Amount > 0 ? formatCurrency(inv.Taxable_Amount) : '-'}</td>
+                                                                  <td className="px-5 py-3 text-left text-emerald-600 font-medium">{inv.NonTaxable_Amount > 0 ? formatCurrency(inv.NonTaxable_Amount) : '-'}</td>
+                                                                  <td className="px-5 py-3 text-left text-slate-500">{inv.VAT_Amount > 0 ? formatCurrency(inv.VAT_Amount) : '-'}</td>
+                                                                  <td className="px-5 py-3 text-left font-bold text-slate-800">{formatCurrency(inv.Total_Amount)}</td>
+                                                                </tr>
+                                                              ))}
+                                                            </tbody>
+                                                          </table>
+                                                      </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             );
                           })
@@ -876,7 +1270,7 @@
                             <thead className="bg-slate-50 text-slate-800 font-semibold border-b border-slate-200">
                               <tr>
                                 <th className="px-6 py-4">رقم الفاتورة</th>
-                                <th className="px-6 py-4">المورد</th>
+                                <th className="px-6 py-4">المورد / الجهة</th>
                                 <th className="px-6 py-4 text-left">الأساس الضريبي</th>
                                 <th className="px-6 py-4 text-left">الضريبة</th>
                                 <th className="px-6 py-4 text-left">الإجمالي (بالملف)</th>
