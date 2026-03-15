@@ -66,6 +66,7 @@
         const Wallet = (p) => <Icon {...p}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></Icon>;
         const FolderOpen = (p) => <Icon {...p}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></Icon>;
         const AlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
+        const BookOpen = (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
 
         // --- UTILITY FUNCTIONS ---
         const levenshtein = (a, b) => {
@@ -590,7 +591,7 @@
           const [expandedCategories, setExpandedCategories] = useState({}); 
           const [editInvoice, setEditInvoice] = useState({ index: null, value: '' });
 
-          const currentData = appMode === 'expenses' ? expensesData : revenuesData;
+          const currentData = appMode === 'expenses' ? expensesData : (appMode === 'revenues' ? revenuesData : { records: [], entities: [], schema: null });
           const setCurrentData = appMode === 'expenses' ? setExpensesData : setRevenuesData;
 
           const entLabel = appMode === 'expenses' ? 'المورد' : 'العميل';
@@ -622,9 +623,11 @@
               setAppMode(mode);
               setActiveTab(tab);
               
-              const targetData = mode === 'expenses' ? expensesData : revenuesData;
-              if (tab !== 'upload' && targetData.records.length === 0) {
-                  setActiveTab('upload');
+              if (mode !== 'reports') {
+                  const targetData = mode === 'expenses' ? expensesData : revenuesData;
+                  if (tab !== 'upload' && targetData.records.length === 0) {
+                      setActiveTab('upload');
+                  }
               }
           };
 
@@ -749,6 +752,61 @@
               });
               return Object.values(map).sort((a,b) => b.totalSpend - a.totalSpend);
           }, [filteredRecords]);
+
+          // --- P&L INCOME STATEMENT CALCULATIONS ---
+          const plFilteredRevenues = useMemo(() => {
+              return revenuesData.records.filter(r => isDateInRange(r.Invoice_Date, currentFilters.start, currentFilters.end, currentFilters.month));
+          }, [revenuesData, currentFilters]);
+
+          const plFilteredExpenses = useMemo(() => {
+              return expensesData.records.filter(r => isDateInRange(r.Invoice_Date, currentFilters.start, currentFilters.end, currentFilters.month));
+          }, [expensesData, currentFilters]);
+
+          const incomeStatement = useMemo(() => {
+              const cogsCategories = ['تكلفة مبيعات - مواد غذائية (خامات ومكونات)', 'تكلفة مبيعات - مواد تعبئة وتغليف ومستلزمات تقديم'];
+              const capexCategories = ['أصول ثابتة - أجهزة حاسب آلي ومعدات'];
+              
+              let totalRevenue = 0;
+              let revBreakdown = {};
+              plFilteredRevenues.forEach(r => {
+                  totalRevenue += r.Net_Amount;
+                  revBreakdown[r.Category] = (revBreakdown[r.Category] || 0) + r.Net_Amount;
+              });
+
+              let totalCOGS = 0;
+              let totalOPEX = 0;
+              let totalCAPEX = 0;
+              let cogsBreakdown = {};
+              let opexBreakdown = {};
+              
+              plFilteredExpenses.forEach(r => {
+                  const cat = r.Category || 'غير مصنف';
+                  const amt = r.Net_Amount;
+                  if (cogsCategories.includes(cat)) {
+                      totalCOGS += amt;
+                      cogsBreakdown[cat] = (cogsBreakdown[cat] || 0) + amt;
+                  } else if (capexCategories.includes(cat)) {
+                      totalCAPEX += amt;
+                  } else {
+                      totalOPEX += amt;
+                      opexBreakdown[cat] = (opexBreakdown[cat] || 0) + amt;
+                  }
+              });
+
+              const grossProfit = totalRevenue - totalCOGS;
+              const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+              const netOperatingIncome = grossProfit - totalOPEX;
+              const netMargin = totalRevenue > 0 ? (netOperatingIncome / totalRevenue) * 100 : 0;
+
+              return {
+                  totalRevenue, revBreakdown: Object.entries(revBreakdown).sort((a,b)=>b[1]-a[1]),
+                  totalCOGS, cogsBreakdown: Object.entries(cogsBreakdown).sort((a,b)=>b[1]-a[1]),
+                  totalOPEX, opexBreakdown: Object.entries(opexBreakdown).sort((a,b)=>b[1]-a[1]),
+                  grossProfit, grossMargin,
+                  netOperatingIncome, netMargin,
+                  totalCAPEX
+              };
+          }, [plFilteredRevenues, plFilteredExpenses]);
 
           // --- MANUAL OVERRIDES ---
           const handleSaveSubCategory = (e, entId, oldCat) => {
@@ -1059,11 +1117,19 @@
                         <NavItem mode="revenues" tab="grouped_purchases" icon={Layers} label="سجل العملاء" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
                         <NavItem mode="revenues" tab="audit" icon={ShieldAlert} label="التناقضات والأخطاء" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} badge={appMode==='revenues' ? anomaliesCount : 0} />
                     </div>
+
+                    {/* Global Reports Module Nav */}
+                    <div className="p-4 uppercase text-[11px] font-black text-amber-400 tracking-widest mt-4 border-t border-slate-800/50 flex items-center">
+                        <BookOpen className="w-4 h-4 ml-2 opacity-70" /> التقارير الختامية
+                    </div>
+                    <div className="px-3">
+                        <NavItem mode="reports" tab="income_statement" icon={FileText} label="قائمة الدخل (P&L)" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                    </div>
                 </div>
               </aside>
 
               {/* MAIN WORKSPACE */}
-              <main className={`flex-1 flex flex-col h-screen overflow-hidden ${appMode === 'expenses' ? 'bg-slate-50' : 'bg-emerald-50/20'}`}>
+              <main className={`flex-1 flex flex-col h-screen overflow-hidden ${appMode === 'expenses' ? 'bg-slate-50' : (appMode === 'revenues' ? 'bg-emerald-50/20' : 'bg-amber-50/20')}`}>
                 
                 {/* UPLOAD SCREEN */}
                 {activeTab === 'upload' && (
@@ -1100,16 +1166,30 @@
                       <div className="w-full xl:w-auto">
                         <h2 className="text-2xl font-extrabold text-slate-800 flex items-center">
                           {activeTab === 'dashboard' && 'ملخص التحليل العام'}
-                          {activeTab === 'categories_summary' && 'ميزان المراجعة (التصنيفات المحاسبية)'}
+                          {activeTab === 'categories_summary' && `ميزان المراجعة لـ ${actLabel}`}
                           {activeTab === 'grouped_purchases' && `سجل ${actLabel} المجمع`}
                           {activeTab === 'audit' && 'التدقيق واكتشاف التناقضات'}
-                          <span className={`mr-3 px-2.5 py-0.5 text-xs font-black rounded-md ${appMode === 'expenses' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                              {appMode === 'expenses' ? 'المصروفات' : 'الإيرادات'}
-                          </span>
+                          {activeTab === 'income_statement' && 'قائمة الدخل الاحترافية (P&L)'}
+                          
+                          {activeTab !== 'income_statement' ? (
+                              <span className={`mr-3 px-2.5 py-0.5 text-xs font-black rounded-md ${appMode === 'expenses' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                  {appMode === 'expenses' ? 'المصروفات' : 'الإيرادات'}
+                              </span>
+                          ) : (
+                              <span className="mr-3 px-2.5 py-0.5 text-xs font-black rounded-md bg-amber-100 text-amber-700">
+                                  تقارير الإدارة العليا
+                              </span>
+                          )}
                         </h2>
-                        <p className="text-sm text-slate-500 font-medium mt-1.5">
-                          تم معالجة <strong className="text-slate-700">{filteredRecords.length.toLocaleString()}</strong> عملية لـ <strong className="text-slate-700">{filteredEntities.length}</strong> {entLabel} في هذه الفترة.
-                        </p>
+                        {activeTab !== 'income_statement' ? (
+                            <p className="text-sm text-slate-500 font-medium mt-1.5">
+                              تم معالجة <strong className="text-slate-700">{filteredRecords.length.toLocaleString()}</strong> عملية لـ <strong className="text-slate-700">{filteredEntities.length}</strong> {entLabel} في هذه الفترة.
+                            </p>
+                        ) : (
+                            <p className="text-sm text-slate-500 font-medium mt-1.5">
+                              تدمج هذه القائمة بين <strong className="text-emerald-600">المبيعات</strong> و <strong className="text-indigo-600">المشتريات</strong> لاستخراج صافي الربح التشغيلي، ويتم حسابها بناءً على <strong className="text-slate-800">المبالغ الصافية فقط (بدون الضريبة)</strong> وفقاً للمعايير المحاسبية.
+                            </p>
+                        )}
                       </div>
                       
                       <div className="flex items-center flex-wrap justify-start xl:justify-end gap-3 w-full xl:w-auto">
@@ -1646,6 +1726,121 @@
                             </table>
                           </div>
                         </div>
+                      )}
+
+                      {/* INCOME STATEMENT TAB (P&L) */}
+                      {activeTab === 'income_statement' && (
+                          <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300 pb-10">
+                              
+                              {/* Financial Highlights */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                                      <p className="text-slate-500 text-xs font-bold mb-1">إجمالي الإيرادات التشغيلية</p>
+                                      <h3 className="text-2xl font-black text-emerald-600" dir="ltr">{formatCurrency(incomeStatement.totalRevenue)}</h3>
+                                  </div>
+                                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                                      <p className="text-slate-500 text-xs font-bold mb-1">مجمل الربح (Gross Profit)</p>
+                                      <h3 className="text-2xl font-black text-blue-600" dir="ltr">{formatCurrency(incomeStatement.grossProfit)}</h3>
+                                      <p className="text-xs font-bold text-slate-400 mt-1 border-t border-slate-100 pt-1">هامش الربح: <span className={incomeStatement.grossMargin >= 0 ? 'text-emerald-500' : 'text-red-500'}>%{incomeStatement.grossMargin.toFixed(1)}</span></p>
+                                  </div>
+                                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                                      <p className="text-slate-500 text-xs font-bold mb-1">إجمالي المصروفات (OPEX)</p>
+                                      <h3 className="text-2xl font-black text-red-500" dir="ltr">{formatCurrency(incomeStatement.totalOPEX)}</h3>
+                                  </div>
+                                  <div className={`p-5 rounded-xl border shadow-md ${incomeStatement.netOperatingIncome >= 0 ? 'bg-indigo-600 border-indigo-700' : 'bg-red-600 border-red-700'}`}>
+                                      <p className="text-white/80 text-xs font-bold mb-1">صافي الدخل التشغيلي</p>
+                                      <h3 className="text-2xl font-black text-white" dir="ltr">{formatCurrency(incomeStatement.netOperatingIncome)}</h3>
+                                      <p className="text-xs font-bold text-white/70 mt-1 border-t border-white/20 pt-1">هامش الصافي: <span className="text-white">%{incomeStatement.netMargin.toFixed(1)}</span></p>
+                                  </div>
+                              </div>
+
+                              {/* The Income Statement Table */}
+                              <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
+                                  
+                                  {/* Revenues Section */}
+                                  <div className="bg-emerald-50/50 px-6 py-3 border-b border-emerald-100">
+                                      <h3 className="text-lg font-black text-emerald-800">الإيرادات التشغيلية (Revenues)</h3>
+                                  </div>
+                                  <div className="divide-y divide-slate-100">
+                                      {incomeStatement.revBreakdown.map(([cat, amt], idx) => (
+                                          <div key={idx} className="flex justify-between items-center px-6 py-3 hover:bg-slate-50 transition-colors text-sm">
+                                              <span className="text-slate-700 font-medium">{cat}</span>
+                                              <span className="text-slate-900 font-bold" dir="ltr">{formatCurrency(amt)}</span>
+                                          </div>
+                                      ))}
+                                      {incomeStatement.revBreakdown.length === 0 && <div className="px-6 py-4 text-slate-400 text-sm text-center">لا توجد إيرادات مسجلة لهذه الفترة</div>}
+                                      <div className="flex justify-between items-center px-6 py-4 bg-emerald-50 border-t border-emerald-200">
+                                          <span className="text-emerald-900 font-black">إجمالي الإيرادات</span>
+                                          <span className="text-emerald-700 font-black text-lg" dir="ltr">{formatCurrency(incomeStatement.totalRevenue)}</span>
+                                      </div>
+                                  </div>
+
+                                  {/* COGS Section */}
+                                  <div className="bg-red-50/50 px-6 py-3 border-b border-t border-red-100">
+                                      <h3 className="text-lg font-black text-red-800">تكلفة المبيعات (Cost of Goods Sold)</h3>
+                                  </div>
+                                  <div className="divide-y divide-slate-100">
+                                      {incomeStatement.cogsBreakdown.map(([cat, amt], idx) => (
+                                          <div key={idx} className="flex justify-between items-center px-6 py-3 hover:bg-slate-50 transition-colors text-sm">
+                                              <span className="text-slate-700 font-medium">{cat}</span>
+                                              <span className="text-slate-900 font-bold" dir="ltr">{formatCurrency(amt)}</span>
+                                          </div>
+                                      ))}
+                                      {incomeStatement.cogsBreakdown.length === 0 && <div className="px-6 py-4 text-slate-400 text-sm text-center">لا توجد تكلفة مبيعات مسجلة لهذه الفترة</div>}
+                                      <div className="flex justify-between items-center px-6 py-4 bg-red-50 border-t border-red-200">
+                                          <span className="text-red-900 font-black">إجمالي تكلفة المبيعات</span>
+                                          <span className="text-red-700 font-black text-lg" dir="ltr">{formatCurrency(incomeStatement.totalCOGS)}</span>
+                                      </div>
+                                  </div>
+
+                                  {/* Gross Profit Line */}
+                                  <div className="flex justify-between items-center px-6 py-5 bg-slate-800 border-t-4 border-slate-900">
+                                      <span className="text-white font-black text-lg">مجمل الربح (Gross Profit)</span>
+                                      <span className="text-blue-400 font-black text-xl" dir="ltr">{formatCurrency(incomeStatement.grossProfit)}</span>
+                                  </div>
+
+                                  {/* OPEX Section */}
+                                  <div className="bg-amber-50/50 px-6 py-3 border-b border-amber-100">
+                                      <h3 className="text-lg font-black text-amber-800">المصروفات التشغيلية (Operating Expenses)</h3>
+                                  </div>
+                                  <div className="divide-y divide-slate-100">
+                                      {incomeStatement.opexBreakdown.map(([cat, amt], idx) => (
+                                          <div key={idx} className="flex justify-between items-center px-6 py-3 hover:bg-slate-50 transition-colors text-sm">
+                                              <span className="text-slate-700 font-medium">{cat}</span>
+                                              <span className="text-slate-900 font-bold" dir="ltr">{formatCurrency(amt)}</span>
+                                          </div>
+                                      ))}
+                                      {incomeStatement.opexBreakdown.length === 0 && <div className="px-6 py-4 text-slate-400 text-sm text-center">لا توجد مصروفات تشغيلية مسجلة لهذه الفترة</div>}
+                                      <div className="flex justify-between items-center px-6 py-4 bg-amber-50 border-t border-amber-200">
+                                          <span className="text-amber-900 font-black">إجمالي المصروفات التشغيلية</span>
+                                          <span className="text-amber-700 font-black text-lg" dir="ltr">{formatCurrency(incomeStatement.totalOPEX)}</span>
+                                      </div>
+                                  </div>
+
+                                  {/* Net Income Line */}
+                                  <div className="flex justify-between items-center px-6 py-6 bg-indigo-900 border-t-4 border-indigo-950">
+                                      <div>
+                                          <span className="text-white font-black text-xl block">صافي الدخل التشغيلي (EBITDA / Net Operating Income)</span>
+                                          <span className="text-indigo-300 text-sm font-medium mt-1 block">الأرباح التشغيلية قبل الفوائد والضرائب والإهلاك</span>
+                                      </div>
+                                      <span className={incomeStatement.netOperatingIncome >= 0 ? "text-emerald-400 font-black text-3xl" : "text-red-400 font-black text-3xl"} dir="ltr">{formatCurrency(incomeStatement.netOperatingIncome)}</span>
+                                  </div>
+                              </div>
+                              
+                              {/* CAPEX Note */}
+                              {incomeStatement.totalCAPEX > 0 && (
+                                  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                                      <div className="flex items-center">
+                                          <Layers className="w-5 h-5 text-slate-400 ml-3"/>
+                                          <div>
+                                              <h4 className="text-sm font-bold text-slate-700">المصروفات الرأسمالية (CAPEX)</h4>
+                                              <p className="text-xs text-slate-500">تم استبعاد الأصول الثابتة من قائمة الدخل المباشرة وفقاً للمعايير المحاسبية.</p>
+                                          </div>
+                                      </div>
+                                      <span className="font-bold text-slate-800 bg-slate-100 px-4 py-2 rounded-lg" dir="ltr">{formatCurrency(incomeStatement.totalCAPEX)}</span>
+                                  </div>
+                              )}
+                          </div>
                       )}
                     </div>
                   </Fragment>
