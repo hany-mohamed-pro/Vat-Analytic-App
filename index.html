@@ -11,6 +11,7 @@
     <!-- React & ReactDOM -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-is/18.2.0/umd/react-is.production.min.js" crossorigin="anonymous"></script>
     
     <!-- Babel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js" crossorigin="anonymous"></script>
@@ -21,6 +22,10 @@
     <!-- html2pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous"></script>
 
+    <!-- Recharts (For Visual Dashboard) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.1.12/Recharts.min.js" crossorigin="anonymous"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
         body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; overflow: hidden; }
@@ -29,6 +34,7 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .recharts-tooltip-wrapper { direction: rtl; font-family: 'Tajawal', sans-serif; }
     </style>
 </head>
 <body>
@@ -36,6 +42,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, Fragment, useMemo } = React;
+        const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, BarChart, Bar, LineChart, Line, ComposedChart } = window.Recharts || {};
 
         // --- ICONS ---
         const Icon = ({ children, className = "" }) => (
@@ -52,6 +59,7 @@
         const Search = (p) => <Icon {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></Icon>;
         const ShieldAlert = (p) => <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></Icon>;
         const TrendingUp = (p) => <Icon {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></Icon>;
+        const TrendingDown = (p) => <Icon {...p}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></Icon>;
         const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Icon>;
         const Activity = (p) => <Icon {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></Icon>;
         const Zap = (p) => <Icon {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
@@ -60,13 +68,15 @@
         const ChevronUp = (p) => <Icon {...p}><polyline points="18 15 12 9 6 15"/></Icon>;
         const Tag = (p) => <Icon {...p}><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></Icon>;
         const Edit2 = (p) => <Icon {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></Icon>;
-        const PieChart = (p) => <Icon {...p}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></Icon>;
+        const PieChartIcon = (p) => <Icon {...p}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></Icon>;
         const CalendarIcon = (p) => <Icon {...p}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
         const ShoppingCart = (p) => <Icon {...p}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></Icon>;
         const Wallet = (p) => <Icon {...p}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></Icon>;
         const FolderOpen = (p) => <Icon {...p}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></Icon>;
         const AlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
         const BookOpen = (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const LineChartIcon = (p) => <Icon {...p}><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></Icon>;
+        const ComposedChartIcon = (p) => <Icon {...p}><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></Icon>;
 
         // --- UTILITY FUNCTIONS ---
         const levenshtein = (a, b) => {
@@ -84,8 +94,8 @@
 
         const isSimilarName = (a, b) => {
           if (!a || !b) return false;
-          const cleanA = String(a).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز|معرض|عميل|زبون)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
-          const cleanB = String(b).toLowerCase().replace(/^(شركة|مؤسسة|مجموعة|مكتب|مصنع|محل|مركز|معرض|عميل|زبون)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
+          const cleanA = String(a).toLowerCase().replace(/^(شركة|شركه|مؤسسة|مؤسسه|مجموعة|مجموعه|مكتب|مصنع|محل|مركز|معرض|عميل|زبون)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
+          const cleanB = String(b).toLowerCase().replace(/^(شركة|شركه|مؤسسة|مؤسسه|مجموعة|مجموعه|مكتب|مصنع|محل|مركز|معرض|عميل|زبون)\s+/g, '').replace(/[^a-z0-9\u0600-\u06FF]/gi, '');
           if (cleanA === cleanB) return true;
           if (Math.abs(cleanA.length - cleanB.length) > 3) return false; 
           const distance = levenshtein(cleanA, cleanB);
@@ -103,64 +113,54 @@
           return isNaN(parsed) ? 0 : parsed;
         };
 
-        // Date Parser with Standardized YYYY-MM-DD output
+        // Advanced Date Parser
         const parseDate = (val) => {
-            if (val === null || val === undefined || val === '') return null;
+            if (!val) return null;
             const pad = (n) => String(n).padStart(2, '0');
             
-            // 1. Handle JavaScript Date object
             if (val instanceof Date) {
                 if (isNaN(val.getTime())) return null;
                 return `${val.getFullYear()}-${pad(val.getMonth()+1)}-${pad(val.getDate())}`;
             }
             
-            // 2. Handle Excel Serial Date (numbers)
             if (typeof val === 'number') {
                 const d = new Date(Math.round((val - 25569) * 86400 * 1000));
                 return isNaN(d.getTime()) ? null : `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
             }
             
-            let str = String(val).trim();
-            str = str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)); // Fix Arabic numerals
+            let str = String(val).trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
             
-            // Extract the date part aggressively (stop at space or T to remove time like 14:30:00)
-            str = str.split(/[ T]/)[0];
-            
-            // Match YYYY-MM-DD or YYYY/MM/DD
-            let match = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
-            if (match) return `${match[1]}-${pad(match[2])}-${pad(match[3])}`;
-            
-            // Match DD-MM-YYYY or DD/MM/YYYY or MM/DD/YYYY
-            match = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/);
-            if (match) {
-                let p1 = parseInt(match[1], 10);
-                let p2 = parseInt(match[2], 10);
-                let year = match[3];
-                // if p2 > 12, it must be the day. MM/DD/YYYY
-                if (p2 > 12) return `${year}-${pad(p1)}-${pad(p2)}`;
-                // if p1 > 12, it must be the day. DD/MM/YYYY
-                if (p1 > 12) return `${year}-${pad(p2)}-${pad(p1)}`;
-                // default to DD/MM/YYYY (Standard in SA)
-                return `${year}-${pad(p2)}-${pad(p1)}`;
+            // Extract the date sequence and ignore time completely
+            const dateMatch = str.match(/(\d{1,4})[-\/.](\d{1,2})[-\/.](\d{1,4})/);
+            if (dateMatch) {
+                let p1 = parseInt(dateMatch[1], 10);
+                let p2 = parseInt(dateMatch[2], 10);
+                let p3 = parseInt(dateMatch[3], 10);
+                let year, month, day;
+
+                if (p1 >= 1000) { year = p1; month = p2; day = p3; }
+                else if (p3 >= 1000) {
+                    year = p3;
+                    if (p2 > 12) { day = p2; month = p1; }
+                    else if (p1 > 12) { day = p1; month = p2; }
+                    else { day = p1; month = p2; } 
+                } else if (p3 < 100) {
+                    year = 2000 + p3;
+                    if (p2 > 12) { day = p2; month = p1; }
+                    else if (p1 > 12) { day = p1; month = p2; }
+                    else { day = p1; month = p2; }
+                }
+
+                if (year && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                    return `${year}-${pad(month)}-${pad(day)}`;
+                }
             }
 
-            // Match DD-MM-YY or DD/MM/YY
-            match = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2})$/);
-            if (match) {
-                let p1 = parseInt(match[1], 10);
-                let p2 = parseInt(match[2], 10);
-                let year = 2000 + parseInt(match[3], 10);
-                if (p2 > 12) return `${year}-${pad(p1)}-${pad(p2)}`;
-                if (p1 > 12) return `${year}-${pad(p2)}-${pad(p1)}`;
-                return `${year}-${pad(p2)}-${pad(p1)}`;
-            }
-
-            // Fallback native
             let d = new Date(str);
             if (!isNaN(d.getTime())) {
                 return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; 
             }
-            return null; // Force null so it becomes 'غير محدد'
+            return null; 
         };
 
         const formatCurrency = (val) => {
@@ -196,8 +196,9 @@
           check(/(لابتوب|حاسب|كمبيوتر|ماك بوك|أجهزة حاسب|سيرفر|ثلاجة عرض|فرن كبير|معدات رأسمالية|laptop|macbook)/, 'أصول ثابتة - أجهزة حاسب آلي ومعدات', 100);
           check(/(ايفون|جوال|ايباد|شاشة|حاسب|لابتوب|سوفتوير|اكس ماكس|برو ماكس|بطارية جوال|بطارية ايفون|خلفية ايفون|شاشة ايفون)/, 'صيانة أجهزة إلكترونية وتقنية', 100);
           check(/(سيار|مركب|دينا|شاحن|اطار|إطار|كفر|بطارية سيارة)/, 'صيانة سيارات ومعدات نقل', 100);
-          check(/(مبن|سباك|كهربائي|باب|جدار|أرضي|دهان|ترميم)/, 'صيانة وتشغيل مباني ومرافق', 100);
           
+          check(/(ايجار|إيجار|عقار|سكن|محل|مستودع|مستودعات|اجار|أجرة|تأجير مقر)/, 'مصروفات إيجارات وعقارات', 500); 
+
           if (/(وصلة غاز|لي غاز|منظم غاز|محبس غاز|اسطوانة غاز للمطبخ|تمديد غاز|موقد)/.test(allText)) {
               addScore('صيانة وتشغيل مباني ومرافق', 150, true);
               addScore('أدوات ومهمات طعام ومطبخ (تشغيلية)', 120, true);
@@ -222,7 +223,6 @@
           if (/(اشتراك شهري|كانفا|canva|سحابة|برنامج|تطبيق|نظام|سوفتوير|كلاود|استضافة|دومين|سيرفر|saas|odoo|erp|اشتراك تقني|تجديد اشتراك)/.test(allText) && !/(تأمين|انترنت|اتصالات|استشارات)/.test(allText)) {
               addScore('اشتراكات تقنية وبرمجيات (IT & SaaS)', 90, /(اشتراك شهري|كانفا|canva|سحابة|برنامج|تطبيق|نظام|سوفتوير|كلاود|استضافة|دومين|سيرفر|saas|odoo|erp|اشتراك تقني|تجديد اشتراك)/.test(descText));
           }
-          if (/(ايجار|إيجار|عقار|سكن|محل|مستودع)/.test(allText) && !/(سيارة|مركبة|دينا|نقل)/.test(allText)) addScore('مصروفات إيجارات وعقارات', 100, /(ايجار|إيجار|عقار|سكن|محل|مستودع)/.test(descText));
           check(/(تأمين طبي|بوبا|التعاونية|تأمين صحي|ميدغلف|تكافل)/, 'مصروفات تأمين طبي للموظفين', 100);
           check(/(دواء|صيدلية|مستشفى|علاج|مستلزمات طبية)/, 'مصروفات رعاية طبية وأدوية', 100);
           check(/(تأمينات اجتماعية|gosi)/, 'مصروفات التأمينات الاجتماعية (GOSI)', 120);
@@ -261,16 +261,18 @@
               if (regex.test(allText)) addScore(cat, basePoints, regex.test(descText));
           };
 
-          check(/(جاهز|هنقرستيشن|مرسول|تطبيقات توصيل|طلبات|توصيل|تطبيق|jahez|hungerstation|delivery|ذا شيفز|تويو|toyou|ninja|نينجا|كريم|careem)/, 'إيرادات تطبيقات التوصيل', 100);
-          check(/(حفل|زواج|مناسب|بوفيه خارجي|تجهيز|كيترينج|تقديمات|catering|event)/, 'إيرادات حفلات ومناسبات', 100);
-          check(/(جملة|شركات|b2b|توريد للغير|بيع جملة|مبيعات الجملة|wholesale)/, 'إيرادات مبيعات جملة (B2B)', 100);
-          check(/(كيك|حلويات|مخبوزات|شوكولات|معجنات|cake|sweets|bakery|تورتة)/, 'مبيعات حلويات ومخبوزات', 90);
-          check(/(مقهى|قهوة|مشروبات|عصائر|شاي|coffee|drinks)/, 'مبيعات مشروبات وقهوة', 90);
-          check(/(مطعم|وجبات|طعام|مأكولات|dine|food|صالة|سفري|محلي)/, 'مبيعات مطعم (داخلي/سفري)', 85);
-          check(/(عميل نقدي|نقدي|شبكة|فيزا|ماستركارد|مدى|كاش|cash|pos|نقطة بيع|أبل باي|apple pay)/, 'مبيعات نقدية ونقاط بيع (POS)', 80);
-          check(/(تاجير|تأجير|رسوم تأخير|غرامات|إيرادات أخرى|اخرى|other)/, 'إيرادات تشغيلية أخرى', 50);
+          check(/(جاهز|هنقرستيشن|مرسول|تطبيقات توصيل|طلبات|توصيل|تطبيق|jahez|hungerstation|delivery|ذا شيفز|تويو|toyou|ninja|نينجا|كريم|careem)/i, 'إيرادات تطبيقات التوصيل', 1000);
+          check(/(عميل نقدي|نقدي|شبكة|فيزا|ماستركارد|مدى|كاش|cash|pos|نقطة بيع|أبل باي|apple pay)/i, 'مبيعات نقدية ونقاط بيع (POS)', 800);
+          
+          check(/(شركه|شركة|مؤسسه|مؤسسة|مجموعه|مجموعة|مصنع|عقود|عقد|جملة|شركات|b2b|توريد|بيع|إعاشة|اعاشة|تقديم|عطار|مقاولات|تجارة)/i, 'إيرادات عقود ومبيعات شركات (B2B)', 400); 
+          
+          check(/(حفل|زواج|مناسب|بوفيه خارجي|تجهيز|كيترينج|تقديمات|catering|event)/i, 'إيرادات حفلات ومناسبات', 600);
+          check(/(كيك|حلويات|مخبوزات|شوكولات|معجنات|cake|sweets|bakery|تورتة)/i, 'مبيعات حلويات ومخبوزات', 90);
+          check(/(مقهى|قهوة|مشروبات|عصائر|شاي|coffee|drinks)/i, 'مبيعات مشروبات وقهوة', 90);
+          check(/(مطعم|وجبات|طعام|مأكولات|dine|food|صالة|سفري|محلي)/i, 'مبيعات مطعم (داخلي/سفري)', 85);
+          check(/(تاجير|تأجير|رسوم تأخير|غرامات|إيرادات أخرى|اخرى|other)/i, 'إيرادات تشغيلية أخرى', 50);
 
-          let bestCategory = 'إيرادات مبيعات عامة';
+          let bestCategory = 'إيرادات مبيعات متنوعة'; 
           let max = 0;
           for (const [cat, score] of Object.entries(scores)) {
               if (score > max) { max = score; bestCategory = cat; }
@@ -294,32 +296,30 @@
           keys.forEach(k => {
             const lower = String(k).toLowerCase().trim();
             
-            // Entity
             if (moduleType === 'expenses' && /(مورد|اسم|شركة|جهة|حساب|دائن|vendor|supplier|merchant)/i.test(lower) && !/(رقم|id|no)/i.test(lower)) scores[k].entity += 500;
             if (moduleType === 'revenues' && /(عميل|زبون|مشتري|مدين|حساب|جهة|اسم|العميل|الزبون|customer|client|buyer|source|channel|منصة|قناة|فرع|branch)/i.test(lower) && !/(رقم|id|no)/i.test(lower)) scores[k].entity += 500;
             
-            // Basic Info
             if (/(بيان|تفاصيل|وصف|صنف|مادة|نوع|description|item|البيان|طلب|order)/i.test(lower) && !/(مورد|عميل|اسم|جهة|حساب|رقم|تاريخ|مبلغ)/i.test(lower)) scores[k].desc += 500;
             if (/(رقم.*ضريب|ضريب.*رقم|تسجيل.*ضريب|تعريفي|tax id|vat id|vat no|tin|vat number|vat reg)/i.test(lower)) scores[k].taxId += 500;
             if (/(فاتورة|مستند|مرجع|قيد|سند|invoice|inv|ref|receipt|إيصال|طلب|order)/i.test(lower) && !/(تاريخ|date|اجمالي|قيمة|مبلغ)/i.test(lower)) scores[k].invNum += 500;
             if (/(تاريخ|وقت|date|time|التاريخ|التوقيت)/i.test(lower)) scores[k].date += 500;
             
-            // --- 1. SUPER EXACT MATCHES FOR AMOUNTS (POS SYSTEMS) ---
             if (/^(الضريبة|ضريبة|ضرائب|الضرائب|tax|taxes|vat|tva|قيمة الضريبة|مبلغ الضريبة|الضريبة المستحقة|ضريبة القيمة المضافة|الضريبه|ضريبه|vat amount|tax amount|نسبة الضريبة|ضريبة المبيعات)$/i.test(lower)) scores[k].vat += 5000;
             if (/^(الاجمالي|الإجمالي|المجموع|total|gross|إجمالي المبيعات|اجمالي المبيعات|المبلغ الاجمالي|المبلغ الإجمالي|المجموع الاجمالي|المجموع الإجمالي|grand total|النهائي|المبلغ الكلي|المستحق|الاجمالي مع الضريبة|الإجمالي مع الضريبة|total amount|الإجمالي الكلي|اجمالي المبلغ|إجمالي المبلغ|اجمالي الدخل)$/i.test(lower)) scores[k].total += 5000;
-            if (/^(الصافي|صافي|net|subtotal|المبيعات|المبلغ|القيمة|الايرادات|الإيرادات|صافي المبيعات|المبيعات الصافية|قبل الضريبة|الاجمالي قبل الضريبة|الإجمالي قبل الضريبة|صافي المبلغ|net amount|المجموع الفرعي|اجمالي المبيعات قبل الضريبة|قيمة المبيعات)$/i.test(lower)) scores[k].net += 5000;
+            
+            // Reduced aggressiveness of generic Net matches to protect Expenses
+            if (/^(الصافي|صافي|net|subtotal|صافي المبيعات|المبيعات الصافية|قبل الضريبة|الاجمالي قبل الضريبة|الإجمالي قبل الضريبة|صافي المبلغ|net amount|المجموع الفرعي|اجمالي المبيعات قبل الضريبة|قيمة المبيعات)$/i.test(lower)) scores[k].net += 5000;
+            
             if (/^(الخاضع|خاضع|الأساس الضريبي|الاساس الضريبي|خاضع للضريبة|المبيعات الخاضعة|taxable|الخاضعة للضريبة|المبلغ الخاضع|الاساس|الأساس|قيمة خاضعة)$/i.test(lower)) scores[k].taxable += 5000;
             if (/^(غير خاضع|معفى|المبيعات المعفاة|بدون ضريبة|صفرية|non-taxable|exempt|معفاة|غير خاضعة|المبلغ المعفى|غير خاضع للضريبة|مبيعات معفاة|مبيعات صفرية)$/i.test(lower)) scores[k].nonTaxable += 5000;
 
-            // --- 2. AGGRESSIVE FUZZY MATCHES FOR AMOUNTS ---
             if (/(ضريب|ضرائب|tax|vat|مضاف|رسوم|tva)/i.test(lower) && !/(رقم|نسب|id|بدون|خاضع|غير|معفى|قبل|بعد|الرقم|تعريف|أساس|اساس|اجمالي|إجمالي|مجموع|total|صافي|net)/i.test(lower)) scores[k].vat += 1000;
-            if (/(اجمالي|إجمالي|مجموع|total|gross|النهائي|الكلي|grand total|المستحق)/i.test(lower) && !/(صافي|خاضع|بدون|قبل|ضريبة|ضرائب|tax|vat|نسبة)/i.test(lower)) scores[k].total += 1000;
-            if (/(صافي|net|sub|basic|مبيعات|إيراد|ايراد|subtotal|قبل الضريبة|المبلغ|الطلب|orders|قيمة)/i.test(lower) && !/(اجمالي|إجمالي|مجموع|ضريبة|ضرائب|tax|vat|total|gross|خاضع|بدون|بعد|النهائي|الكلي|نسبة)/i.test(lower)) scores[k].net += 800;
+            if (/(اجمالي|إجمالي|مجموع|total|gross|النهائي|الكلي|grand total|المستحق|المبلغ|القيمة)/i.test(lower) && !/(صافي|خاضع|بدون|قبل|ضريبة|ضرائب|tax|vat|نسبة)/i.test(lower)) scores[k].total += 1000;
+            if (/(صافي|net|sub|basic|مبيعات|إيراد|ايراد|subtotal|قبل الضريبة|الطلب|orders)/i.test(lower) && !/(اجمالي|إجمالي|مجموع|ضريبة|ضرائب|tax|vat|total|gross|خاضع|بدون|بعد|النهائي|الكلي|نسبة)/i.test(lower)) scores[k].net += 800;
             if (/(خاضع|taxable|أساس|اساس)/i.test(lower) && !/(غير|بدون|non|exempt|معفاة|ضريبة|ضرائب)/i.test(lower)) scores[k].taxable += 1000;
             if (/(بدون|غير خاضع|معفى|صفرية|non-taxable|exempt|معفاة|غير خاضعة)/i.test(lower)) scores[k].nonTaxable += 1000;
           });
 
-          // Values inference
           sampleData.slice(0, 20).forEach(row => {
             keys.forEach(k => {
               const val = row[k];
@@ -379,72 +379,64 @@
             let nonTaxable = schema.NonTaxable_Amount ? parseNumber(row[schema.NonTaxable_Amount]) : 0;
             let net = schema.Net_Amount ? parseNumber(row[schema.Net_Amount]) : 0;
 
-            // --- BULLETPROOF MATHEMATICAL RECONCILIATION ENGINE ---
-            
-            // 0. Force 15% VAT Extraction for Revenues if VAT is completely missing or 0
+            let calculatedNet = net;
+            let calculatedVat = vat;
+            let calculatedTotal = total;
+
+            if (schema.Net_Amount === schema.Total_Amount && total > 0 && vat > 0) {
+                calculatedNet = total - vat; 
+            }
+
             if (moduleType === 'revenues') {
-                // If Net and Total are identical, OR VAT is 0, we assume it's a Gross amount with 15% inclusive VAT
-                if ((net === total && total > 0) || (vat === 0 && total > 0)) {
-                    taxable = total / 1.15;
-                    vat = total - taxable;
-                    net = taxable;
+                if ((calculatedNet === calculatedTotal && calculatedTotal > 0) || (calculatedVat === 0 && calculatedTotal > 0 && !schema.VAT_Amount)) {
+                    taxable = calculatedTotal / 1.15;
+                    calculatedVat = calculatedTotal - taxable;
+                    calculatedNet = taxable;
                     nonTaxable = 0;
                 }
             } else {
-                // For expenses, just fix Net if it wrongly fell back to Total
-                if (net === total && total > 0 && vat > 0) {
-                    net = total - vat;
+                if (calculatedNet === 0 && calculatedTotal > 0) {
+                    calculatedNet = calculatedTotal - calculatedVat;
                 }
             }
 
-            // 1. Calculate strictly missing fields if obvious
-            if (vat === 0 && total > net && net > 0) vat = total - net;
-            if (net === 0 && total > 0 && vat > 0) net = total - vat;
-            if (total === 0 && net > 0 && vat >= 0) total = net + vat;
-            if (net === 0 && taxable > 0) net = taxable + nonTaxable;
+            if (calculatedVat === 0 && calculatedTotal > calculatedNet && calculatedNet > 0) calculatedVat = calculatedTotal - calculatedNet;
+            if (calculatedTotal === 0 && calculatedNet > 0) calculatedTotal = calculatedNet + calculatedVat;
 
-            // 2. Distribute Net strictly into Taxable / NonTaxable
-            if (taxable === 0 && nonTaxable === 0 && net > 0) {
-              if (vat > 0) { 
-                 let expectedVatIfFullyTaxable = net * 0.15;
-                 // If VAT matches 15% of Net perfectly (allow small rounding error)
-                 if (Math.abs(vat - expectedVatIfFullyTaxable) <= 1.5) { 
-                    taxable = net;
-                    nonTaxable = 0;
-                 } else {
-                    // It's a mixed invoice (partially taxable). Find the exact taxable base from the VAT.
-                    let calculatedTaxable = vat / 0.15;
-                    if (calculatedTaxable <= net) {
-                       taxable = calculatedTaxable;
-                       nonTaxable = net - taxable;
-                    } else {
-                       taxable = net; // Safety fallback
-                       nonTaxable = 0;
-                    }
-                 }
-              } else {
-                  // No VAT -> Entirely Non-Taxable
-                  taxable = 0;
-                  nonTaxable = net;
-              }
+            if (taxable === 0 && nonTaxable === 0 && calculatedNet > 0) {
+                if (calculatedVat > 0) {
+                     let expectedVat = calculatedNet * 0.15;
+                     if (Math.abs(calculatedVat - expectedVat) <= 1.5) {
+                        taxable = calculatedNet;
+                        nonTaxable = 0;
+                     } else {
+                        let calcTaxable = calculatedVat / 0.15;
+                        if (calcTaxable <= calculatedNet) {
+                            taxable = calcTaxable;
+                            nonTaxable = calculatedNet - calcTaxable;
+                        } else {
+                            taxable = calculatedNet;
+                            nonTaxable = 0;
+                        }
+                     }
+                } else {
+                    taxable = 0;
+                    nonTaxable = calculatedNet;
+                }
             } else if (taxable > 0 || nonTaxable > 0) {
-                // If explicitly mapped by columns, trust the columns but ensure Net and VAT align perfectly
-                net = taxable + nonTaxable;
-                if (vat === 0 && taxable > 0) vat = taxable * 0.15;
+                calculatedNet = taxable + nonTaxable;
             }
-            
-            // 3. Strict Rounding
+
             taxable = parseFloat(taxable.toFixed(2));
             nonTaxable = parseFloat(nonTaxable.toFixed(2));
-            vat = parseFloat(vat.toFixed(2));
+            vat = parseFloat(calculatedVat.toFixed(2));
             net = parseFloat((taxable + nonTaxable).toFixed(2));
             
-            // 4. Force Total to match the mathematical sum perfectly
-            let calculatedTotal = parseFloat((net + vat).toFixed(2));
-            if (total === 0 || Math.abs(total - calculatedTotal) <= 2) {
-                total = calculatedTotal;
+            let strictTotal = parseFloat((net + vat).toFixed(2));
+            if (calculatedTotal === 0 || Math.abs(calculatedTotal - strictTotal) <= 2) {
+                total = strictTotal;
             } else {
-                total = parseFloat(total.toFixed(2));
+                total = parseFloat(calculatedTotal.toFixed(2)); 
             }
 
             return {
@@ -542,7 +534,8 @@
             blue: "bg-blue-50 text-blue-600 border-blue-100",
             emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
             indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
-            red: "bg-red-50 text-red-600 border-red-100"
+            red: "bg-red-50 text-red-600 border-red-100",
+            amber: "bg-amber-50 text-amber-600 border-amber-100"
           };
           return (
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-start space-x-4 space-x-reverse transition-all hover:shadow-md">
@@ -581,8 +574,8 @@
           const [expensesData, setExpensesData] = useState({ records: [], entities: [], schema: null });
           const [revenuesData, setRevenuesData] = useState({ records: [], entities: [], schema: null });
           
-          // State for Isolated Filters: { 'expenses-dashboard': {search:'', start:'', end:'', month:''}, ... }
-          const [pageFilters, setPageFilters] = useState({});
+          const [dateFilter, setDateFilter] = useState({ start: '', end: '', month: '' });
+          const [searchQuery, setSearchQuery] = useState('');
 
           const [expandedEntities, setExpandedEntities] = useState({});
           const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -598,20 +591,14 @@
           const entsLabel = appMode === 'expenses' ? 'الموردين' : 'العملاء';
           const actLabel = appMode === 'expenses' ? 'المصروفات' : 'الإيرادات';
 
-          // Get filters for current tab
-          const filterKey = `${appMode}-${activeTab}`;
-          const currentFilters = pageFilters[filterKey] || { search: '', start: '', end: '', month: '' };
-          
-          const updateFilters = (updates) => {
-              setPageFilters(prev => ({
-                  ...prev,
-                  [filterKey]: { ...currentFilters, ...updates }
-              }));
-          };
-
           useEffect(() => {
+            let attempts = 0;
             const checkLibs = setInterval(() => {
-              if (window.XLSX && window.html2pdf) {
+              attempts++;
+              if (window.XLSX && window.html2pdf && window.Recharts) {
+                setStatus('ready');
+                clearInterval(checkLibs);
+              } else if (attempts > 50 && window.XLSX && window.html2pdf) {
                 setStatus('ready');
                 clearInterval(checkLibs);
               }
@@ -699,21 +686,20 @@
           const toggleSubCat = (key) => setExpandedSubCats(p => ({ ...p, [key]: !p[key] }));
           const toggleCategoryView = (catName) => setExpandedCategories(p => ({ ...p, [catName]: !p[catName] }));
 
-          // --- FILTERING DYNAMIC AGGREGATION ---
           const filteredRecords = useMemo(() => {
               if (!currentData || !currentData.records) return [];
               return currentData.records.filter(r => {
                   const passAudit = auditMode ? r.Anomalies.length > 0 : true;
-                  const passDate = isDateInRange(r.Invoice_Date, currentFilters.start, currentFilters.end, currentFilters.month);
-                  const passSearch = currentFilters.search === '' || 
-                      r.Entity_Normalized_Name.toLowerCase().includes(currentFilters.search.toLowerCase()) || 
-                      r.Invoice_Number.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
-                      (r.Entity_TaxID && r.Entity_TaxID.toLowerCase().includes(currentFilters.search.toLowerCase())) ||
-                      (r.Item_Description && r.Item_Description.toLowerCase().includes(currentFilters.search.toLowerCase())) ||
-                      (r.Category && r.Category.toLowerCase().includes(currentFilters.search.toLowerCase()));
+                  const passDate = isDateInRange(r.Invoice_Date, dateFilter.start, dateFilter.end, dateFilter.month);
+                  const passSearch = searchQuery === '' || 
+                      (r.Entity_Normalized_Name && r.Entity_Normalized_Name.toLowerCase().includes(searchQuery.toLowerCase())) || 
+                      (r.Invoice_Number && String(r.Invoice_Number).toLowerCase().includes(searchQuery.toLowerCase())) ||
+                      (r.Entity_TaxID && r.Entity_TaxID.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                      (r.Item_Description && r.Item_Description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                      (r.Category && r.Category.toLowerCase().includes(searchQuery.toLowerCase()));
                   return passAudit && passDate && passSearch;
               });
-          }, [currentData, auditMode, currentFilters]);
+          }, [currentData, auditMode, dateFilter, searchQuery]);
 
           const totalSpend = filteredRecords.reduce((sum, r) => sum + r.Total_Amount, 0);
           const totalVAT = filteredRecords.reduce((sum, r) => sum + r.VAT_Amount, 0);
@@ -753,14 +739,13 @@
               return Object.values(map).sort((a,b) => b.totalSpend - a.totalSpend);
           }, [filteredRecords]);
 
-          // --- P&L INCOME STATEMENT CALCULATIONS ---
           const plFilteredRevenues = useMemo(() => {
-              return revenuesData.records.filter(r => isDateInRange(r.Invoice_Date, currentFilters.start, currentFilters.end, currentFilters.month));
-          }, [revenuesData, currentFilters]);
+              return revenuesData.records.filter(r => isDateInRange(r.Invoice_Date, dateFilter.start, dateFilter.end, dateFilter.month));
+          }, [revenuesData, dateFilter]);
 
           const plFilteredExpenses = useMemo(() => {
-              return expensesData.records.filter(r => isDateInRange(r.Invoice_Date, currentFilters.start, currentFilters.end, currentFilters.month));
-          }, [expensesData, currentFilters]);
+              return expensesData.records.filter(r => isDateInRange(r.Invoice_Date, dateFilter.start, dateFilter.end, dateFilter.month));
+          }, [expensesData, dateFilter]);
 
           const incomeStatement = useMemo(() => {
               const cogsCategories = ['تكلفة مبيعات - مواد غذائية (خامات ومكونات)', 'تكلفة مبيعات - مواد تعبئة وتغليف ومستلزمات تقديم'];
@@ -768,20 +753,31 @@
               
               let totalRevenue = 0;
               let revBreakdown = {};
+              let totalRevenuesVAT = 0;
+              let totalRevenuesGross = 0;
+
               plFilteredRevenues.forEach(r => {
                   totalRevenue += r.Net_Amount;
+                  totalRevenuesVAT += r.VAT_Amount;
+                  totalRevenuesGross += r.Total_Amount;
                   revBreakdown[r.Category] = (revBreakdown[r.Category] || 0) + r.Net_Amount;
               });
 
               let totalCOGS = 0;
               let totalOPEX = 0;
               let totalCAPEX = 0;
+              let totalExpensesVAT = 0;
+              let totalExpensesGross = 0;
               let cogsBreakdown = {};
               let opexBreakdown = {};
               
               plFilteredExpenses.forEach(r => {
                   const cat = r.Category || 'غير مصنف';
                   const amt = r.Net_Amount;
+                  
+                  totalExpensesVAT += r.VAT_Amount;
+                  totalExpensesGross += r.Total_Amount;
+
                   if (cogsCategories.includes(cat)) {
                       totalCOGS += amt;
                       cogsBreakdown[cat] = (cogsBreakdown[cat] || 0) + amt;
@@ -804,11 +800,36 @@
                   totalOPEX, opexBreakdown: Object.entries(opexBreakdown).sort((a,b)=>b[1]-a[1]),
                   grossProfit, grossMargin,
                   netOperatingIncome, netMargin,
-                  totalCAPEX
+                  totalCAPEX,
+                  totalExpensesVAT, totalExpensesGross,
+                  totalRevenuesVAT, totalRevenuesGross
               };
           }, [plFilteredRevenues, plFilteredExpenses]);
 
-          // --- MANUAL OVERRIDES ---
+          const chartDataRaw = useMemo(() => {
+              const map = {};
+              plFilteredRevenues.forEach(r => {
+                  const m = (r.Invoice_Date && r.Invoice_Date !== 'غير محدد') ? r.Invoice_Date.substring(0, 7) : 'أخرى';
+                  if (!map[m]) map[m] = { name: m, الإيرادات: 0, المصروفات: 0, الربح: 0, هامش_الربح: 0 };
+                  map[m].الإيرادات += r.Net_Amount;
+                  map[m].الربح += r.Net_Amount;
+              });
+              plFilteredExpenses.forEach(r => {
+                  const m = (r.Invoice_Date && r.Invoice_Date !== 'غير محدد') ? r.Invoice_Date.substring(0, 7) : 'أخرى';
+                  if (!map[m]) map[m] = { name: m, الإيرادات: 0, المصروفات: 0, الربح: 0, هامش_الربح: 0 };
+                  map[m].المصروفات += r.Net_Amount;
+                  map[m].الربح -= r.Net_Amount;
+              });
+              return Object.values(map).map(d => ({
+                  ...d,
+                  هامش_الربح: d.الإيرادات > 0 ? parseFloat(((d.الربح / d.الإيرادات) * 100).toFixed(1)) : 0
+              })).sort((a,b) => a.name.localeCompare(b.name)).filter(d => d.name !== 'أخرى');
+          }, [plFilteredRevenues, plFilteredExpenses]);
+
+          const revPieData = useMemo(() => incomeStatement.revBreakdown.map(([name, value]) => ({ name, value })), [incomeStatement.revBreakdown]);
+          const expPieData = useMemo(() => [...incomeStatement.cogsBreakdown, ...incomeStatement.opexBreakdown].map(([name, value]) => ({ name, value })), [incomeStatement.cogsBreakdown, incomeStatement.opexBreakdown]);
+          const topExpBarData = useMemo(() => [...incomeStatement.cogsBreakdown, ...incomeStatement.opexBreakdown].sort((a,b)=>b[1]-a[1]).slice(0, 5).map(([name, value]) => ({ name, value })), [incomeStatement.cogsBreakdown, incomeStatement.opexBreakdown]);
+
           const handleSaveSubCategory = (e, entId, oldCat) => {
             e.stopPropagation();
             if (!editSubCat.value.trim() || editSubCat.value === oldCat) {
@@ -824,19 +845,6 @@
             setEditSubCat({ entId: null, oldCat: '', value: '' });
           };
 
-          const handleSaveInvoiceCategory = (originalIndex) => {
-            if (!editInvoice.value.trim()) {
-                setEditInvoice({ index: null, value: '' });
-                return;
-            }
-            const updatedRecords = currentData.records.map(r => {
-                if (r._originalIndex === originalIndex) return { ...r, Category: editInvoice.value };
-                return r;
-            });
-            updateCurrentDataState(updatedRecords);
-            setEditInvoice({ index: null, value: '' });
-          };
-          
           const handleSaveGlobalCategory = (oldCatName, newCatName) => {
              if (!newCatName.trim() || newCatName === oldCatName) return;
              const updatedRecords = currentData.records.map(r => {
@@ -873,11 +881,29 @@
             setCurrentData({ ...currentData, records: updatedRecords, entities: finalEntities });
           }
 
-          // --- EXPORT FUNCTIONS ---
           const exportToExcel = () => {
             setExportMenuOpen(false);
-            if (!filteredEntities.length) return;
+            
+            if (['income_statement', 'owners_summary', 'visual_dashboard'].includes(activeTab)) {
+                const wb = window.XLSX.utils.book_new();
+                
+                const plSummary = [
+                    { "البند": "إجمالي المبيعات", "المبلغ": incomeStatement.totalRevenue },
+                    { "البند": "تكلفة المبيعات (الطعام والتغليف)", "المبلغ": incomeStatement.totalCOGS },
+                    { "البند": "مجمل الربح", "المبلغ": incomeStatement.grossProfit },
+                    { "البند": "نسبة مجمل الربح", "المبلغ": `${incomeStatement.grossMargin.toFixed(1)}%` },
+                    { "البند": "إجمالي المصاريف التشغيلية", "المبلغ": incomeStatement.totalOPEX },
+                    { "البند": "صافي الأرباح", "المبلغ": incomeStatement.netOperatingIncome },
+                    { "البند": "نسبة صافي الربح", "المبلغ": `${incomeStatement.netMargin.toFixed(1)}%` },
+                ];
+                
+                const ws1 = window.XLSX.utils.json_to_sheet(plSummary);
+                window.XLSX.utils.book_append_sheet(wb, ws1, `ملخص الأداء المالي`);
+                window.XLSX.writeFile(wb, `التقارير_الختامية_FinIntel.xlsx`);
+                return;
+            }
 
+            if (!filteredEntities.length) return;
             const wb = window.XLSX.utils.book_new();
 
             const entsExport = filteredEntities.map(s => ({
@@ -925,7 +951,13 @@
 
           const exportToPDF = () => {
             setExportMenuOpen(false);
-            if (!filteredEntities.length) return;
+            
+            if (['owners_summary', 'visual_dashboard'].includes(activeTab)) {
+                window.print();
+                return;
+            }
+
+            if (!filteredEntities.length && activeTab !== 'income_statement') return;
             setStatus('exporting');
             setTimeout(() => {
                 const element = document.getElementById('pdf-report-template');
@@ -984,7 +1016,7 @@
                   <option value="مصروفات تشغيلية متنوعة" />
                   <option value="إيرادات تطبيقات التوصيل" />
                   <option value="إيرادات حفلات ومناسبات" />
-                  <option value="إيرادات مبيعات جملة (B2B)" />
+                  <option value="إيرادات عقود ومبيعات شركات (B2B)" />
                   <option value="مبيعات حلويات ومخبوزات" />
                   <option value="مبيعات مشروبات وقهوة" />
                   <option value="مبيعات مطعم (داخلي/سفري)" />
@@ -1006,7 +1038,7 @@
                        <div>
                            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>تقرير ميزان المراجعة لـ {actLabel}</h1>
                            <p style={{ color: '#64748b', marginTop: '5px', fontSize: '14px' }}>تاريخ التصدير: {new Date().toLocaleDateString('ar-SA')}</p>
-                           {(currentFilters.start || currentFilters.end || currentFilters.month) && <p style={{ color: '#4f46e5', marginTop: '5px', fontSize: '12px', fontWeight: 'bold' }}>الفترة: {currentFilters.month || `${currentFilters.start} إلى ${currentFilters.end}`}</p>}
+                           {(dateFilter.start || dateFilter.end || dateFilter.month) && <p style={{ color: '#4f46e5', marginTop: '5px', fontSize: '12px', fontWeight: 'bold' }}>الفترة: {dateFilter.month || `${dateFilter.start} إلى ${dateFilter.end}`}</p>}
                        </div>
                        <div style={{ display: 'flex', alignItems: 'center', color: appMode==='expenses'?'#4f46e5':'#059669', fontWeight: 'bold', fontSize: '24px' }}>
                            FinIntel ERP {appMode==='expenses' ? <Zap className="w-8 h-8 mr-2"/> : <TrendingUp className="w-8 h-8 mr-2"/>}
@@ -1101,7 +1133,7 @@
                     <div className="px-3">
                         <NavItem mode="expenses" tab="upload" icon={UploadIcon} label="رفع ملف المشتريات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
                         <NavItem mode="expenses" tab="dashboard" icon={BarChart3} label="لوحة القيادة" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
-                        <NavItem mode="expenses" tab="categories_summary" icon={PieChart} label="ميزان المصروفات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="expenses" tab="categories_summary" icon={PieChartIcon} label="ميزان المصروفات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
                         <NavItem mode="expenses" tab="grouped_purchases" icon={Layers} label="سجل الموردين" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
                         <NavItem mode="expenses" tab="audit" icon={ShieldAlert} label="التناقضات والأخطاء" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} badge={appMode==='expenses' ? anomaliesCount : 0} />
                     </div>
@@ -1113,7 +1145,7 @@
                     <div className="px-3">
                         <NavItem mode="revenues" tab="upload" icon={UploadIcon} label="رفع ملف المبيعات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
                         <NavItem mode="revenues" tab="dashboard" icon={BarChart3} label="لوحة القيادة" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
-                        <NavItem mode="revenues" tab="categories_summary" icon={PieChart} label="ميزان الإيرادات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="revenues" tab="categories_summary" icon={PieChartIcon} label="ميزان الإيرادات" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
                         <NavItem mode="revenues" tab="grouped_purchases" icon={Layers} label="سجل العملاء" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
                         <NavItem mode="revenues" tab="audit" icon={ShieldAlert} label="التناقضات والأخطاء" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} badge={appMode==='revenues' ? anomaliesCount : 0} />
                     </div>
@@ -1123,6 +1155,8 @@
                         <BookOpen className="w-4 h-4 ml-2 opacity-70" /> التقارير الختامية
                     </div>
                     <div className="px-3">
+                        <NavItem mode="reports" tab="owners_summary" icon={Users} label="لوحة الأداء المالي" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
+                        <NavItem mode="reports" tab="visual_dashboard" icon={PieChartIcon} label="التحليل الرسومي التفاعلي" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
                         <NavItem mode="reports" tab="income_statement" icon={FileText} label="قائمة الدخل (P&L)" currentMode={appMode} currentTab={activeTab} onClick={handleNavClick} />
                     </div>
                 </div>
@@ -1170,8 +1204,10 @@
                           {activeTab === 'grouped_purchases' && `سجل ${actLabel} المجمع`}
                           {activeTab === 'audit' && 'التدقيق واكتشاف التناقضات'}
                           {activeTab === 'income_statement' && 'قائمة الدخل الاحترافية (P&L)'}
+                          {activeTab === 'owners_summary' && 'لوحة الأداء المالي'}
+                          {activeTab === 'visual_dashboard' && 'التحليل الرسومي التفاعلي'}
                           
-                          {activeTab !== 'income_statement' ? (
+                          {(!['income_statement', 'owners_summary', 'visual_dashboard'].includes(activeTab)) ? (
                               <span className={`mr-3 px-2.5 py-0.5 text-xs font-black rounded-md ${appMode === 'expenses' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
                                   {appMode === 'expenses' ? 'المصروفات' : 'الإيرادات'}
                               </span>
@@ -1181,36 +1217,47 @@
                               </span>
                           )}
                         </h2>
-                        {activeTab !== 'income_statement' ? (
+                        {(!['income_statement', 'owners_summary', 'visual_dashboard'].includes(activeTab)) && (
                             <p className="text-sm text-slate-500 font-medium mt-1.5">
                               تم معالجة <strong className="text-slate-700">{filteredRecords.length.toLocaleString()}</strong> عملية لـ <strong className="text-slate-700">{filteredEntities.length}</strong> {entLabel} في هذه الفترة.
                             </p>
-                        ) : (
+                        )}
+                        {activeTab === 'income_statement' && (
                             <p className="text-sm text-slate-500 font-medium mt-1.5">
-                              تدمج هذه القائمة بين <strong className="text-emerald-600">المبيعات</strong> و <strong className="text-indigo-600">المشتريات</strong> لاستخراج صافي الربح التشغيلي، ويتم حسابها بناءً على <strong className="text-slate-800">المبالغ الصافية فقط (بدون الضريبة)</strong> وفقاً للمعايير المحاسبية.
+                              تدمج هذه القائمة بين <strong className="text-emerald-600">المبيعات</strong> و <strong className="text-indigo-600">المشتريات</strong> لاستخراج صافي الربح التشغيلي وفقاً للمعايير المحاسبية.
+                            </p>
+                        )}
+                        {activeTab === 'owners_summary' && (
+                            <p className="text-sm text-slate-500 font-medium mt-1.5">
+                              ملخص مالي مباشر ومصمم خصيصاً للملاك ومتخذي القرار لعرض مؤشرات الأداء الحيوية للشركة.
+                            </p>
+                        )}
+                        {activeTab === 'visual_dashboard' && (
+                            <p className="text-sm text-slate-500 font-medium mt-1.5">
+                              مؤشرات ورسوم بيانية تفاعلية متقدمة لتحليل مسار الإيرادات والتكاليف وتحديد مصادر الربح بدقة.
                             </p>
                         )}
                       </div>
                       
                       <div className="flex items-center flex-wrap justify-start xl:justify-end gap-3 w-full xl:w-auto">
                         {/* Month Filter */}
-                        <div className={`flex items-center bg-white rounded-lg px-3 py-2 border shadow-sm transition-colors ${currentFilters.month ? (appMode==='expenses'?'border-indigo-400':'border-emerald-400') : 'border-slate-300'}`}>
-                           <CalendarIcon className={`w-4 h-4 ml-2 ${appMode==='expenses'?'text-indigo-500':'text-emerald-500'}`} />
+                        <div className={`flex items-center bg-white rounded-lg px-3 py-2 border shadow-sm transition-colors ${dateFilter.month ? 'border-amber-400' : 'border-slate-300'}`}>
+                           <CalendarIcon className="w-4 h-4 ml-2 text-slate-500" />
                            <input 
                              type="month" 
-                             value={currentFilters.month} 
-                             onChange={e => updateFilters({ month: e.target.value, start: '', end: '' })} 
+                             value={dateFilter.month} 
+                             onChange={e => setDateFilter({ month: e.target.value, start: '', end: '' })} 
                              className="bg-transparent outline-none cursor-pointer text-sm text-slate-700 font-bold" 
                              title="تصفية بشهر محدد"
                            />
                         </div>
 
                         {/* Date Range Filter */}
-                        <div className={`flex items-center bg-white rounded-lg px-3 py-2 border shadow-sm transition-colors ${(currentFilters.start || currentFilters.end) ? (appMode==='expenses'?'border-indigo-400':'border-emerald-400') : 'border-slate-300'}`} title="تصفية بفترة مخصصة">
+                        <div className={`flex items-center bg-white rounded-lg px-3 py-2 border shadow-sm transition-colors ${(dateFilter.start || dateFilter.end) ? 'border-amber-400' : 'border-slate-300'}`} title="تصفية بفترة مخصصة">
                            <div className="flex items-center space-x-1 space-x-reverse text-sm text-slate-700 font-medium">
-                               <input type="date" value={currentFilters.start || ''} onChange={e=>updateFilters({ start: e.target.value, month: '' })} className="bg-transparent outline-none cursor-pointer" />
+                               <input type="date" value={dateFilter.start || ''} onChange={e=>setDateFilter(p => ({ ...p, start: e.target.value, month: '' }))} className="bg-transparent outline-none cursor-pointer" />
                                <span className="text-slate-300 mx-1">|</span>
-                               <input type="date" value={currentFilters.end || ''} onChange={e=>updateFilters({ end: e.target.value, month: '' })} className="bg-transparent outline-none cursor-pointer" />
+                               <input type="date" value={dateFilter.end || ''} onChange={e=>setDateFilter(p => ({ ...p, end: e.target.value, month: '' }))} className="bg-transparent outline-none cursor-pointer" />
                            </div>
                         </div>
 
@@ -1220,8 +1267,8 @@
                           <input 
                             type="text" 
                             placeholder="بحث شامل..." 
-                            value={currentFilters.search}
-                            onChange={(e) => updateFilters({ search: e.target.value })}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="pr-10 pl-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 xl:w-56 bg-white shadow-sm"
                           />
                         </div>
@@ -1230,7 +1277,7 @@
                         <div className="relative">
                           <button 
                             onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                            className={`flex items-center px-4 py-2 text-white rounded-lg font-bold shadow-md transition-colors text-sm ${appMode === 'expenses' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                            className="flex items-center px-4 py-2 text-white rounded-lg font-bold shadow-md transition-colors text-sm bg-slate-800 hover:bg-slate-700"
                           >
                             <Download className="w-4 h-4 ml-2" /> تصدير
                           </button>
@@ -1391,31 +1438,31 @@
                                                                   </div>
                                                                   <h4 className="font-bold text-slate-700 text-sm">{ent.name} <span className="text-slate-400 font-medium text-xs ml-1">(حساب فرعي / {entLabel})</span></h4>
                                                               </div>
-                                                              <div className="hidden xl:flex items-center gap-4 mr-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-sm">
-                                                                  <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
-                                                                      <span className="text-slate-500 text-xs font-bold mb-0.5">العمليات</span>
-                                                                      <span className="font-black text-slate-800 text-base">{ent.invoices.length}</span>
+                                                              <div className="hidden xl:flex items-center gap-4 mr-4 bg-slate-800 px-4 py-1.5 rounded-lg border border-slate-700 shadow-md text-xs">
+                                                                  <div className="flex flex-col items-center px-2 border-l border-slate-700 last:border-0">
+                                                                      <span className="text-slate-400 text-[10px]">العمليات</span>
+                                                                      <span className="font-bold text-white">{ent.invoices.length}</span>
                                                                   </div>
-                                                                  <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
-                                                                      <span className="text-slate-500 text-xs font-bold mb-0.5">الخاضع</span>
-                                                                      <span className="font-black text-blue-600 text-base" dir="ltr">{formatCurrency(ent.totalTaxable)}</span>
+                                                                  <div className="flex flex-col items-center px-2 border-l border-slate-700 last:border-0">
+                                                                      <span className="text-slate-400 text-[10px]">الخاضع</span>
+                                                                      <span className="font-bold text-blue-400" dir="ltr">{formatCurrency(ent.totalTaxable)}</span>
                                                                   </div>
-                                                                  <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
-                                                                      <span className="text-slate-500 text-xs font-bold mb-0.5">غير خاضع</span>
-                                                                      <span className="font-black text-emerald-600 text-base" dir="ltr">{formatCurrency(ent.totalNonTaxable)}</span>
+                                                                  <div className="flex flex-col items-center px-2 border-l border-slate-700 last:border-0">
+                                                                      <span className="text-slate-400 text-[10px]">غير خاضع</span>
+                                                                      <span className="font-bold text-emerald-400" dir="ltr">{formatCurrency(ent.totalNonTaxable)}</span>
                                                                   </div>
-                                                                  <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
-                                                                      <span className="text-slate-500 text-xs font-bold mb-0.5">الضريبة</span>
-                                                                      <span className="font-black text-slate-600 text-base" dir="ltr">{formatCurrency(ent.totalVAT)}</span>
+                                                                  <div className="flex flex-col items-center px-2 border-l border-slate-700 last:border-0">
+                                                                      <span className="text-slate-400 text-[10px]">الضريبة</span>
+                                                                      <span className="font-bold text-slate-300" dir="ltr">{formatCurrency(ent.totalVAT)}</span>
                                                                   </div>
-                                                                  <div className="flex flex-col items-center px-3">
-                                                                      <span className="text-indigo-600 text-xs font-black mb-0.5">الإجمالي</span>
-                                                                      <span className="font-black text-indigo-700 text-lg" dir="ltr">{formatCurrency(ent.totalSpend)}</span>
+                                                                  <div className="flex flex-col items-center px-2">
+                                                                      <span className="text-indigo-300 text-[10px]">الإجمالي</span>
+                                                                      <span className="font-black text-white" dir="ltr">{formatCurrency(ent.totalSpend)}</span>
                                                                   </div>
                                                               </div>
                                                               <div className="xl:hidden flex items-center gap-2 text-xs font-bold mr-2">
-                                                                  <span className="text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">{ent.invoices.length} فواتير</span>
-                                                                  <span className="text-white bg-indigo-600 px-3 py-1.5 rounded-lg shadow-sm">{formatCurrency(ent.totalSpend)}</span>
+                                                                  <span className="text-slate-300 bg-slate-700 px-2 py-1 rounded border border-slate-600">{ent.invoices.length} فواتير</span>
+                                                                  <span className="text-white bg-indigo-600 px-2 py-1 rounded shadow-sm">{formatCurrency(ent.totalSpend)}</span>
                                                               </div>
                                                           </div>
 
@@ -1464,7 +1511,7 @@
                         </div>
                       )}
 
-                      {/* GROUPED ENTITIES TAB (Target Design from Screenshot) */}
+                      {/* GROUPED ENTITIES TAB */}
                       {activeTab === 'grouped_purchases' && (
                         <div className="space-y-4 animate-in fade-in duration-300">
                           <div className={`bg-${appMode==='expenses'?'indigo':'emerald'}-50 text-${appMode==='expenses'?'indigo':'emerald'}-900 px-5 py-4 rounded-xl border border-${appMode==='expenses'?'indigo':'emerald'}-200 text-sm font-bold flex items-center mb-6 shadow-sm`}>
@@ -1482,7 +1529,6 @@
                               return (
                                 <div key={sup.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-200 mb-5">
                                   
-                                  {/* --- MAIN HEADER (MATCHING THE SCREENSHOT) --- */}
                                   <div 
                                     className="bg-[#1e293b] text-white p-5 flex flex-col xl:flex-row xl:items-center justify-between cursor-pointer"
                                     onClick={() => toggleEntity(sup.id)}
@@ -1510,7 +1556,6 @@
                                       </div>
                                     </div>
                                     
-                                    {/* Stats Grid matching screenshot */}
                                     <div className="flex items-center justify-between xl:justify-end gap-6 mt-5 xl:mt-0 xl:pr-6 xl:border-r border-slate-700 w-full xl:w-auto overflow-x-auto pb-2 xl:pb-0">
                                       <div className="flex flex-col items-center">
                                           <span className="text-slate-400 text-[11px] font-bold mb-1">العمليات</span>
@@ -1535,7 +1580,6 @@
                                     </div>
                                   </div>
 
-                                  {/* --- SUB-CATEGORIES SECTION --- */}
                                   {isExpanded && (() => {
                                     const groupedByCategory = supplierInvoices.reduce((acc, inv) => {
                                         const cat = inv.Category || 'غير مصنف';
@@ -1558,7 +1602,6 @@
                                               return (
                                                   <div key={cIdx} className="mb-6 last:mb-0 border border-slate-200 rounded-xl overflow-hidden">
                                                       
-                                                      {/* Sub-Category Title Bar */}
                                                       <div 
                                                           className="bg-slate-50 border-b border-slate-200 px-5 py-3 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors"
                                                           onClick={() => toggleSubCat(subCatKey)}
@@ -1591,37 +1634,36 @@
                                                                   </div>
                                                               )}
                                                           </div>
-                                                          <div className="hidden xl:flex items-center gap-4 mr-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-sm">
-                                                              <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
-                                                                  <span className="text-slate-500 text-xs font-bold mb-0.5">العمليات</span>
-                                                                  <span className="font-black text-slate-800 text-base">{invoices.length}</span>
+                                                          <div className="hidden xl:flex items-center gap-4 mr-4 bg-slate-800 px-4 py-1.5 rounded-lg border border-slate-700 shadow-md text-xs">
+                                                              <div className="flex flex-col items-center px-2 border-l border-slate-700 last:border-0">
+                                                                  <span className="text-slate-400 text-[10px]">العمليات</span>
+                                                                  <span className="font-bold text-white">{invoices.length}</span>
                                                               </div>
-                                                              <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
-                                                                  <span className="text-slate-500 text-xs font-bold mb-0.5">الخاضع</span>
-                                                                  <span className="font-black text-blue-600 text-base" dir="ltr">{formatCurrency(catTaxable)}</span>
+                                                              <div className="flex flex-col items-center px-2 border-l border-slate-700 last:border-0">
+                                                                  <span className="text-slate-400 text-[10px]">الخاضع</span>
+                                                                  <span className="font-bold text-blue-400" dir="ltr">{formatCurrency(catTaxable)}</span>
                                                               </div>
-                                                              <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
-                                                                  <span className="text-slate-500 text-xs font-bold mb-0.5">غير خاضع</span>
-                                                                  <span className="font-black text-emerald-600 text-base" dir="ltr">{formatCurrency(catNonTaxable)}</span>
+                                                              <div className="flex flex-col items-center px-2 border-l border-slate-700 last:border-0">
+                                                                  <span className="text-slate-400 text-[10px]">غير خاضع</span>
+                                                                  <span className="font-bold text-emerald-400" dir="ltr">{formatCurrency(catNonTaxable)}</span>
                                                               </div>
-                                                              <div className="flex flex-col items-center px-3 border-l border-slate-200 last:border-0">
-                                                                  <span className="text-slate-500 text-xs font-bold mb-0.5">الضريبة</span>
-                                                                  <span className="font-black text-slate-600 text-base" dir="ltr">{formatCurrency(catVAT)}</span>
+                                                              <div className="flex flex-col items-center px-2 border-l border-slate-700 last:border-0">
+                                                                  <span className="text-slate-400 text-[10px]">الضريبة</span>
+                                                                  <span className="font-bold text-slate-300" dir="ltr">{formatCurrency(catVAT)}</span>
                                                               </div>
-                                                              <div className="flex flex-col items-center px-3">
-                                                                  <span className="text-indigo-600 text-xs font-black mb-0.5">الإجمالي</span>
-                                                                  <span className="font-black text-indigo-700 text-lg" dir="ltr">{formatCurrency(catTotal)}</span>
+                                                              <div className="flex flex-col items-center px-2">
+                                                                  <span className="text-indigo-300 text-[10px]">الإجمالي</span>
+                                                                  <span className="font-black text-white" dir="ltr">{formatCurrency(catTotal)}</span>
                                                               </div>
                                                           </div>
                                                           <div className="xl:hidden flex items-center gap-2 text-xs font-bold mr-2">
-                                                              <span className="text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">{invoices.length} فواتير</span>
-                                                              <span className="text-white bg-indigo-600 px-3 py-1.5 rounded-lg shadow-sm">{formatCurrency(catTotal)}</span>
+                                                              <span className="text-slate-300 bg-slate-700 px-2 py-1 rounded border border-slate-600">{invoices.length} فواتير</span>
+                                                              <span className="text-white bg-indigo-600 px-2 py-1 rounded shadow-sm">{formatCurrency(catTotal)}</span>
                                                           </div>
                                                       </div>
                                                       
                                                       {isSubExpanded && (
                                                         <Fragment>
-                                                          {/* Table (Matching Screenshot) */}
                                                           <div className="overflow-x-auto bg-white p-4 pt-2">
                                                               <table className="w-full text-right text-sm">
                                                                 <thead className="text-slate-400 text-xs border-b border-slate-200">
@@ -1732,7 +1774,6 @@
                       {activeTab === 'income_statement' && (
                           <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300 pb-10">
                               
-                              {/* Financial Highlights */}
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                                       <p className="text-slate-500 text-xs font-bold mb-1">إجمالي الإيرادات التشغيلية</p>
@@ -1754,10 +1795,8 @@
                                   </div>
                               </div>
 
-                              {/* The Income Statement Table */}
                               <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
                                   
-                                  {/* Revenues Section */}
                                   <div className="bg-emerald-50/50 px-6 py-3 border-b border-emerald-100">
                                       <h3 className="text-lg font-black text-emerald-800">الإيرادات التشغيلية (Revenues)</h3>
                                   </div>
@@ -1775,7 +1814,6 @@
                                       </div>
                                   </div>
 
-                                  {/* COGS Section */}
                                   <div className="bg-red-50/50 px-6 py-3 border-b border-t border-red-100">
                                       <h3 className="text-lg font-black text-red-800">تكلفة المبيعات (Cost of Goods Sold)</h3>
                                   </div>
@@ -1793,13 +1831,11 @@
                                       </div>
                                   </div>
 
-                                  {/* Gross Profit Line */}
                                   <div className="flex justify-between items-center px-6 py-5 bg-slate-800 border-t-4 border-slate-900">
                                       <span className="text-white font-black text-lg">مجمل الربح (Gross Profit)</span>
                                       <span className="text-blue-400 font-black text-xl" dir="ltr">{formatCurrency(incomeStatement.grossProfit)}</span>
                                   </div>
 
-                                  {/* OPEX Section */}
                                   <div className="bg-amber-50/50 px-6 py-3 border-b border-amber-100">
                                       <h3 className="text-lg font-black text-amber-800">المصروفات التشغيلية (Operating Expenses)</h3>
                                   </div>
@@ -1817,7 +1853,6 @@
                                       </div>
                                   </div>
 
-                                  {/* Net Income Line */}
                                   <div className="flex justify-between items-center px-6 py-6 bg-indigo-900 border-t-4 border-indigo-950">
                                       <div>
                                           <span className="text-white font-black text-xl block">صافي الدخل التشغيلي (EBITDA / Net Operating Income)</span>
@@ -1827,7 +1862,6 @@
                                   </div>
                               </div>
                               
-                              {/* CAPEX Note */}
                               {incomeStatement.totalCAPEX > 0 && (
                                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
                                       <div className="flex items-center">
@@ -1842,6 +1876,269 @@
                               )}
                           </div>
                       )}
+
+                      {/* OWNERS SUMMARY TAB */}
+                      {activeTab === 'owners_summary' && (() => {
+                          const { totalRevenue, totalOPEX, totalCOGS, grossProfit, netOperatingIncome, netMargin, grossMargin } = incomeStatement;
+                          
+                          const totalRevInvoices = plFilteredRevenues.length;
+                          const aov = totalRevInvoices > 0 ? totalRevenue / totalRevInvoices : 0;
+
+                          return (
+                              <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300 pb-10">
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                                          <div className="absolute top-0 right-0 w-2 h-full bg-emerald-500"></div>
+                                          <div>
+                                              <p className="text-slate-500 text-sm font-bold mb-1">إجمالي المبيعات</p>
+                                              <p className="text-xs text-slate-400 mb-3">المبيعات الصافية (بدون ضريبة)</p>
+                                          </div>
+                                          <h3 className="text-3xl font-black text-slate-800" dir="ltr">{formatCurrency(totalRevenue)}</h3>
+                                      </div>
+                                      
+                                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                                          <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
+                                          <div>
+                                              <p className="text-slate-500 text-sm font-bold mb-1">تكلفة المبيعات</p>
+                                              <p className="text-xs text-slate-400 mb-3">تكلفة الطعام والمواد الغذائية (COGS)</p>
+                                          </div>
+                                          <h3 className="text-3xl font-black text-slate-800" dir="ltr">{formatCurrency(totalCOGS)}</h3>
+                                      </div>
+
+                                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                                          <div className="absolute top-0 right-0 w-2 h-full bg-amber-500"></div>
+                                          <div>
+                                              <p className="text-slate-500 text-sm font-bold mb-1">إجمالي المصاريف التشغيلية</p>
+                                              <p className="text-xs text-slate-400 mb-3">الرواتب، الإيجارات، والتشغيل (OPEX)</p>
+                                          </div>
+                                          <h3 className="text-3xl font-black text-slate-800" dir="ltr">{formatCurrency(totalOPEX)}</h3>
+                                      </div>
+
+                                      <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden flex flex-col justify-between ${netOperatingIncome >= 0 ? 'bg-indigo-600 border-indigo-700' : 'bg-red-600 border-red-700'}`}>
+                                          <div>
+                                              <p className="text-white/80 text-sm font-bold mb-1">صافي الأرباح</p>
+                                              <p className="text-xs text-white/60 mb-3">الربح الصافي النهائي (Net Income)</p>
+                                          </div>
+                                          <h3 className="text-3xl font-black text-white" dir="ltr">{formatCurrency(netOperatingIncome)}</h3>
+                                      </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                          <div className="flex items-center gap-4">
+                                              <div className="bg-emerald-100 p-3 rounded-full"><TrendingUp className="w-6 h-6 text-emerald-600" /></div>
+                                              <div>
+                                                  <p className="text-slate-500 text-sm font-bold">نسبة مجمل الربح</p>
+                                                  <p className="text-xs text-slate-400">الربحية بعد خصم تكلفة المواد</p>
+                                              </div>
+                                          </div>
+                                          <h3 className="text-2xl font-black text-slate-800" dir="ltr">%{grossMargin.toFixed(1)}</h3>
+                                      </div>
+                                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                          <div className="flex items-center gap-4">
+                                              <div className="bg-indigo-100 p-3 rounded-full"><TrendingUp className="w-6 h-6 text-indigo-600" /></div>
+                                              <div>
+                                                  <p className="text-slate-500 text-sm font-bold">نسبة صافي الربح</p>
+                                                  <p className="text-xs text-slate-400">الربحية النهائية للمطعم</p>
+                                              </div>
+                                          </div>
+                                          <h3 className="text-2xl font-black text-slate-800" dir="ltr">%{netMargin.toFixed(1)}</h3>
+                                      </div>
+                                  </div>
+
+                                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                      <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center">
+                                          <Activity className="w-5 h-5 ml-2 text-indigo-500" /> مسار تدفق الأرباح (Profitability Waterfall)
+                                      </h3>
+                                      <div className="space-y-5">
+                                          <div>
+                                              <div className="flex justify-between text-sm mb-1.5">
+                                                  <span className="font-bold text-slate-700 ml-4">1. إجمالي المبيعات المحصلة</span>
+                                                  <div className="flex gap-4">
+                                                      <span className="font-black text-slate-900 shrink-0" dir="ltr">{formatCurrency(totalRevenue)}</span>
+                                                      <span className="text-slate-400 font-bold w-12 text-left">%100.0</span>
+                                                  </div>
+                                              </div>
+                                              <div className="w-full bg-slate-100 rounded-full h-3">
+                                                  <div className="bg-emerald-500 h-3 rounded-full" style={{ width: '100%' }}></div>
+                                              </div>
+                                          </div>
+
+                                          <div>
+                                              <div className="flex justify-between text-sm mb-1.5">
+                                                  <span className="font-bold text-slate-700 ml-4">2. مجمل الربح (بعد خصم تكلفة المواد)</span>
+                                                  <div className="flex gap-4">
+                                                      <span className="font-black text-slate-900 shrink-0" dir="ltr">{formatCurrency(grossProfit)}</span>
+                                                      <span className="text-slate-400 font-bold w-12 text-left">%{totalRevenue > 0 ? ((grossProfit/totalRevenue)*100).toFixed(1) : '0.0'}</span>
+                                                  </div>
+                                              </div>
+                                              <div className="w-full bg-slate-100 rounded-full h-3">
+                                                  <div className="bg-blue-500 h-3 rounded-full" style={{ width: `${totalRevenue > 0 ? (grossProfit/totalRevenue)*100 : 0}%` }}></div>
+                                              </div>
+                                          </div>
+
+                                          <div>
+                                              <div className="flex justify-between text-sm mb-1.5">
+                                                  <span className="font-bold text-slate-700 ml-4">3. صافي الأرباح (بعد خصم كافة المصاريف التشغيلية)</span>
+                                                  <div className="flex gap-4">
+                                                      <span className="font-black text-slate-900 shrink-0" dir="ltr">{formatCurrency(netOperatingIncome)}</span>
+                                                      <span className="text-slate-400 font-bold w-12 text-left">%{netMargin.toFixed(1)}</span>
+                                                  </div>
+                                              </div>
+                                              <div className="w-full bg-slate-100 rounded-full h-3">
+                                                  <div className={`h-3 rounded-full ${netMargin >= 0 ? 'bg-indigo-600' : 'bg-red-500'}`} style={{ width: `${Math.max(0, netMargin)}%` }}></div>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+                          );
+                      })()}
+
+                      {/* VISUAL INTERACTIVE DASHBOARD TAB */}
+                      {activeTab === 'visual_dashboard' && (() => {
+                          const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#ef4444', '#6366f1', '#14b8a6'];
+
+                          if (!window.Recharts) {
+                              return <div className="text-center py-20 font-bold text-slate-500">جاري تحميل مكتبة الرسوم البيانية... يرجى التأكد من اتصال الإنترنت.</div>;
+                          }
+
+                          return (
+                              <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300 pb-10">
+                                  
+                                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                      <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center">
+                                          <ComposedChartIcon className="w-5 h-5 ml-2 text-indigo-500" /> مسار الأرباح والمصروفات زمنياً
+                                      </h3>
+                                      <div className="h-80 w-full" dir="ltr">
+                                          <ResponsiveContainer width="100%" height="100%">
+                                              <ComposedChart data={chartDataRaw} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                                  <defs>
+                                                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                                                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                                                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                                      </linearGradient>
+                                                      <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
+                                                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                                                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                                                      </linearGradient>
+                                                  </defs>
+                                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                                                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => `${value/1000}k`} dx={-10} />
+                                                  <Tooltip 
+                                                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                                      itemStyle={{ fontWeight: 'bold' }}
+                                                      formatter={(value) => formatCurrency(value)}
+                                                      labelStyle={{ fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}
+                                                  />
+                                                  <Legend verticalAlign="top" height={36} wrapperStyle={{ fontWeight: 'bold', fontSize: '14px' }}/>
+                                                  <Area type="monotone" dataKey="الإيرادات" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                                                  <Area type="monotone" dataKey="المصروفات" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorExp)" />
+                                              </ComposedChart>
+                                          </ResponsiveContainer>
+                                      </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                                          <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center">
+                                              <PieChartIcon className="w-5 h-5 ml-2 text-emerald-500" /> التوزيع النسبي لمصادر الدخل
+                                          </h3>
+                                          <div className="flex-1 h-72 w-full" dir="ltr">
+                                              <ResponsiveContainer width="100%" height="100%">
+                                                  <PieChart>
+                                                      <Pie data={revPieData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value">
+                                                          {revPieData.map((entry, index) => (
+                                                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                          ))}
+                                                      </Pie>
+                                                      <Tooltip 
+                                                          formatter={(value) => formatCurrency(value)}
+                                                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                                      />
+                                                      <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }}/>
+                                                  </PieChart>
+                                              </ResponsiveContainer>
+                                          </div>
+                                      </div>
+
+                                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                                          <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center">
+                                              <PieChartIcon className="w-5 h-5 ml-2 text-red-500" /> التوزيع النسبي للمصروفات
+                                          </h3>
+                                          <div className="flex-1 h-72 w-full" dir="ltr">
+                                              <ResponsiveContainer width="100%" height="100%">
+                                                  <PieChart>
+                                                      <Pie data={expPieData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value">
+                                                          {expPieData.map((entry, index) => (
+                                                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                          ))}
+                                                      </Pie>
+                                                      <Tooltip 
+                                                          formatter={(value) => formatCurrency(value)}
+                                                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                                      />
+                                                      <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }}/>
+                                                  </PieChart>
+                                              </ResponsiveContainer>
+                                          </div>
+                                      </div>
+                                  </div>
+
+                                  <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg text-white">
+                                      <h3 className="text-lg font-black text-white mb-6 flex items-center">
+                                          <LineChartIcon className="w-5 h-5 ml-2 text-blue-400" /> علاقة المبيعات بنسبة هامش الربح
+                                      </h3>
+                                      <div className="h-72 w-full" dir="ltr">
+                                          <ResponsiveContainer width="100%" height="100%">
+                                              <ComposedChart data={chartDataRaw} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                                                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                                                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} tickFormatter={(value) => `${value/1000}k`} dx={-10} />
+                                                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fill: '#f59e0b', fontSize: 12}} tickFormatter={(value) => `${value}%`} dx={10} />
+                                                  <Tooltip 
+                                                      cursor={{fill: '#1e293b'}}
+                                                      contentStyle={{ borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: 'white' }}
+                                                      labelStyle={{ fontWeight: 'bold', color: '#cbd5e1', marginBottom: '8px' }}
+                                                  />
+                                                  <Legend verticalAlign="top" height={36} wrapperStyle={{ fontWeight: 'bold', fontSize: '14px' }}/>
+                                                  <Bar yAxisId="left" dataKey="الإيرادات" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
+                                                  <Line yAxisId="right" type="monotone" dataKey="هامش_الربح" name="هامش الربح (%)" stroke="#f59e0b" strokeWidth={3} dot={{r: 4, strokeWidth: 2}} activeDot={{r: 6}} />
+                                              </ComposedChart>
+                                          </ResponsiveContainer>
+                                      </div>
+                                  </div>
+
+                                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                                      <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center shrink-0">
+                                          <TrendingDown className="w-5 h-5 ml-2 text-red-500" /> أعلى التكاليف والمصروفات
+                                      </h3>
+                                      <div className="h-80 w-full" dir="ltr">
+                                          <ResponsiveContainer width="100%" height="100%">
+                                              <BarChart data={topExpBarData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                                                  <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => `${value/1000}k`} />
+                                                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fill: '#0f172a', fontSize: 12, fontWeight: 'bold'}} width={150} />
+                                                  <Tooltip 
+                                                      cursor={{fill: '#f1f5f9'}}
+                                                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                                      formatter={(value) => formatCurrency(value)}
+                                                  />
+                                                  <Bar dataKey="value" name="التكلفة" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={25}>
+                                                      {topExpBarData.map((entry, index) => (
+                                                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                      ))}
+                                                  </Bar>
+                                              </BarChart>
+                                          </ResponsiveContainer>
+                                      </div>
+                                  </div>
+
+                              </div>
+                          );
+                      })()}
                     </div>
                   </Fragment>
                 )}
